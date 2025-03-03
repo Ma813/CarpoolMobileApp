@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Backend.Models;
 
 namespace Backend.Controllers
 {
@@ -12,11 +15,28 @@ namespace Backend.Controllers
         {
             _context = context;
         }
-
-        [HttpGet(Name ="getUserWorkTimes")]
-        public IActionResult GetUserWorkTimes()
+        
+        
+        /// <summary>
+        /// Get all work times for the user
+        /// </summary>
+        /// <returns>Work times of the user</returns>
+        [Authorize]
+        [HttpGet(Name = "getUserWorkTimes")]
+        public async Task<ActionResult<IEnumerable<UserWorkTime>>> GetUserWorkTimes()
         {
-            var userWorkTimes = _context.User_Work_Times.ToList();
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+            if (user == null) return NotFound();
+
+
+
+            var userWorkTimes = _context.User_Work_Times.Where(uwt => uwt.user_id == user.Id).ToList();
             return Ok(userWorkTimes);
         }
     }
