@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using System;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,7 +9,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.WebHost.UseUrls("http://0.0.0.0:5125"); // Listen on all interfaces
+// Configure MySQL Database Connection
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+);
+
 // Add CORS Policy
 builder.Services.AddCors(options =>
 {
@@ -16,6 +26,10 @@ builder.Services.AddCors(options =>
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
+    options.AddPolicy("DisableCORS", builder =>
+    {
+        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
 });
 
 var app = builder.Build();
@@ -30,7 +44,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Enable CORS (Must be before UseAuthorization and MapControllers)
-app.UseCors("AllowAll");
+app.UseCors("DisableCORS");
 
 app.UseAuthorization();
 
