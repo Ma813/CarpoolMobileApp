@@ -1,44 +1,43 @@
-import { Text, View, TextInput, Button } from "react-native";
-import WeatherForecastPage from "../components/WeatherForecast";
+import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
+import UserWorkTimesPage from "../components/UserWorkTime";
 import React, { useState } from "react";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link } from "expo-router";
 
 export default function Index() {
   const [text, setText] = useState("");
 
   const saveData = async () => {
     try {
-      await AsyncStorage.setItem('user_name', JSON.stringify({ text }));
-      alert('Data saved!');
+      await AsyncStorage.setItem("user_name", JSON.stringify({ text }));
+      alert("Data saved!");
     } catch (error) {
-      console.error('Error saving data:', error);
+      console.error("Error saving data:", error);
     }
   };
 
   const getData = async () => {
     try {
-      const value = await AsyncStorage.getItem('user_name');
+      const value = await AsyncStorage.getItem("user_name");
       if (value !== null) {
         const parsedValue = JSON.parse(value);
-        alert('Retrieved data: ' + parsedValue.text);
-      }
-      else {
-        alert('No data found');
+        alert("Retrieved data: " + parsedValue.text);
+      } else {
+        alert("No data found");
       }
     } catch (error) {
-      console.error('Error retrieving data:', error);
+      console.error("Error retrieving data:", error);
     }
   };
 
   const removeData = async () => {
     try {
-      await AsyncStorage.removeItem('user_name');
-      alert('Data removed!');
+      await AsyncStorage.removeItem("user_name");
+      alert("Data removed!");
     } catch (error) {
-      console.error('Error removing data:', error);
+      console.error("Error removing data:", error);
     }
   };
-
 
   return (
     <View
@@ -48,14 +47,27 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-
+      <Link href="/user-work-time" asChild>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#007bff",
+            padding: 12,
+            borderRadius: 8,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "white", fontWeight: "bold" }}>
+            User Work Times
+          </Text>
+        </TouchableOpacity>
+      </Link>
       <TextInput
         style={{
           height: 40,
-          borderColor: 'gray',
+          borderColor: "gray",
           borderWidth: 1,
           marginBottom: 20,
-          width: '80%',
+          width: "80%",
           paddingHorizontal: 10,
         }}
         placeholder="Type here"
@@ -66,16 +78,16 @@ export default function Index() {
         title="Submit"
         onPress={() => {
           saveData().catch((error) => {
-            console.error('Error saving data:', error);
+            console.error("Error saving data:", error);
           });
         }}
       />
-      
+
       <Button
         title="Retrieve"
         onPress={() => {
           getData().catch((error) => {
-            console.error('Error retrieving data:', error);
+            console.error("Error retrieving data:", error);
           });
         }}
       />
@@ -84,14 +96,12 @@ export default function Index() {
         title="Remove"
         onPress={() => {
           removeData().catch((error) => {
-            console.error('Error removing data:', error);
+            console.error("Error removing data:", error);
           });
         }}
       />
 
-
       <Text>Main Page</Text>
-      <WeatherForecastPage />
     </View>
   );
 }
