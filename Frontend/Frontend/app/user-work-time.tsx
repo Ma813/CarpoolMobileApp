@@ -7,6 +7,7 @@ import React from "react";
 import { UserWorkTime } from "@/types/UserWorkTime";
 import { getUserWorkTimes } from "@/services/api";
 import { useRouter } from "expo-router";
+import DayPicker from "@/components/DayPicker";
 
 export default function UserWorkTimesPage() {
   const [workTime, setWorkTime] = useState<UserWorkTime[]>([]);
@@ -87,32 +88,7 @@ export default function UserWorkTimesPage() {
 
       {/* Day Picker */}
       <Text style={{ marginBottom: 5, fontWeight: "bold" }}>Select Day:</Text>
-      <TouchableOpacity
-        onPress={() => setDayPickerVisible(true)}
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          borderRadius: 5,
-          marginBottom: 10,
-          height: 50,
-        }}
-      >
-        <DropDownPicker
-          items={[...days.map((day) => ({ label: day, value: day }))]}
-          value={newDay}
-          containerStyle={{ height: 50 }}
-          style={{ backgroundColor: "#fafafa" }}
-          listItemContainerStyle={{
-            justifyContent: "flex-start",
-          }}
-          dropDownContainerStyle={{ backgroundColor: "#fafafa" }}
-          onChangeValue={(value) => setNewDay(value as string)}
-          multiple={false}
-          setValue={setNewDay}
-          open={isDayPickerVisible}
-          setOpen={setDayPickerVisible}
-        />
-      </TouchableOpacity>
+      <DayPicker days={days} newDay={newDay} setNewDay={setNewDay} />
 
       {/* Start Time Picker */}
       <TouchableOpacity
