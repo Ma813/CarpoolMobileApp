@@ -11,6 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.WebHost.UseUrls("http://0.0.0.0:5125"); 
 // Configure MySQL Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -21,13 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
     options.AddPolicy("DisableCORS", builder =>
     {
         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();

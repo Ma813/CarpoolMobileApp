@@ -3,7 +3,6 @@ import { baseurl } from '../constants/baseurl';
 
 const api = axios.create({
     baseURL: baseurl,
-    withCredentials: true,
 });
 
 export type WeatherForecast = {
