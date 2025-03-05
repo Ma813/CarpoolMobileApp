@@ -68,7 +68,7 @@ namespace Backend.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(user);
+            return Ok(user.Username + " Account has been created");
         }
     }
 

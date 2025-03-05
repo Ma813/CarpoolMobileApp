@@ -15,6 +15,9 @@ const GoogleNaps = () => {
         <Link href="/pages/LoginPage" style={styles.button}>
           Login
         </Link>
+        <Link href="/pages/RegisterPage" style={styles.button}>
+          Register
+        </Link>
       </View>
     </View>
   );
