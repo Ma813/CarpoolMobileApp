@@ -11,7 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.WebHost.UseUrls("http://0.0.0.0:5125"); 
+builder.WebHost.UseUrls("http://0.0.0.0:5125");
+
 // Configure MySQL Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -27,6 +28,7 @@ builder.Services.AddCors(options =>
         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                .AddJwtBearer(options =>
@@ -50,7 +52,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Enable CORS (Must be before UseAuthorization and MapControllers)
 app.UseCors("DisableCORS");

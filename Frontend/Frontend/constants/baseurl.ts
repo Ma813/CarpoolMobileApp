@@ -12,4 +12,4 @@
 */
 
 
-export const baseurl = 'http://localhost:5125';
+export const baseurl = 'http://192.168.0.234:5125';
