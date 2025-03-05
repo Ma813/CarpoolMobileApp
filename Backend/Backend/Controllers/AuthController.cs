@@ -3,6 +3,8 @@ using Backend.Services;
 using Backend.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Controllers
 {
@@ -22,6 +24,10 @@ namespace Backend.Controllers
         public async Task<ActionResult<string>> Login([FromBody] LoginModel loginModel)
         {
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == loginModel.Username);
+
+            var sha256 = SHA256.Create();
+            var hashedPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(loginModel.Password)));
+            loginModel.Password = hashedPassword;
 
             if (user == null || loginModel.Password != user.Password) // hashing needed
             {
@@ -43,9 +49,14 @@ namespace Backend.Controllers
 
             var existingUser = await _context.Users.SingleOrDefaultAsync(u => u.Username == signup.Username);
 
-            if (existingUser != null) {
+            if (existingUser != null)
+            {
                 return Conflict("User with such username already exists");
             }
+
+            var sha256 = SHA256.Create();
+            var hashedPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(signup.Password)));
+            signup.Password = hashedPassword;
 
             var user = new User
             {

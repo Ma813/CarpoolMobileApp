@@ -112,6 +112,10 @@ export default function Index() {
 
       <Text>Main Page</Text>
       <WeatherForecastPage />
+
     </View>
   );
-}
+};
+
+
+export default GoogleNaps;

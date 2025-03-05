@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using System.Text;
@@ -11,6 +12,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.WebHost.UseUrls("http://0.0.0.0:5125");
+
 // Configure MySQL Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -27,18 +29,19 @@ builder.Services.AddCors(options =>
     });
 });
 
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//               .AddJwtBearer(options =>
-//               {
-//                   options.TokenValidationParameters = new TokenValidationParameters
-//                   {
-//                       ValidateIssuer = false,
-//                       ValidateAudience = false,
-//                       ValidateLifetime = true,
-//                       ValidateIssuerSigningKey = true,
-//                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")))
-//                   };
-//               });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+               .AddJwtBearer(options =>
+               {
+                   options.TokenValidationParameters = new TokenValidationParameters
+                   {
+                       ValidateIssuer = false,
+                       ValidateAudience = false,
+                       ValidateLifetime = true,
+                       ValidateIssuerSigningKey = true,
+                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")))
+                   };
+               });
 
 var app = builder.Build();
 

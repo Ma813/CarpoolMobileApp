@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Text, View } from "react-native";
-import { WeatherForecast, getWeatherForecast } from "../services/api";
+import { WeatherForecast, getWeatherForecast } from "../../services/api";
 import { Switch } from "react-native";
 import React from "react";
 

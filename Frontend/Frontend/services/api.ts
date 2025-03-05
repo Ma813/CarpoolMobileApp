@@ -5,6 +5,7 @@ import { UserWorkTime } from '@/types/UserWorkTime';
 const api = axios.create({
     baseURL: baseurl+'/api',
     withCredentials: true,
+
 });
 
 export type WeatherForecast = {
