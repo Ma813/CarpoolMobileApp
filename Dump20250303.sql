@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.40, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.41, for macos15 (arm64)
 --
 -- Host: localhost    Database: pvp
 -- ------------------------------------------------------
--- Server version	8.0.40
+-- Server version	9.2.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -40,7 +40,7 @@ CREATE TABLE `user_work_times` (
 
 LOCK TABLES `user_work_times` WRITE;
 /*!40000 ALTER TABLE `user_work_times` DISABLE KEYS */;
-INSERT INTO `user_work_times` VALUES (1,'00:00:09','00:00:10','Monday',1),(2,'09:00:00','17:00:00','Tuesday',1);
+INSERT INTO `user_work_times` VALUES (1,'00:00:09','00:00:10','Monday',4),(2,'09:00:00','17:00:00','Tuesday',4),(3,'09:30:00','17:00:00','Tuesday',3);
 /*!40000 ALTER TABLE `user_work_times` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -58,7 +58,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -67,7 +67,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'saras','saras');
+INSERT INTO `users` VALUES (3,'jonas','RzKH+CmNunFjqJeQiVj3wOrnM+JdLgJ5kuou3JvtL6g='),(4,'string','RzKH+CmNunFjqJeQiVj3wOrnM+JdLgJ5kuou3JvtL6g=');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -80,4 +80,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-03 17:52:16
+-- Dump completed on 2025-03-03 22:49:56
