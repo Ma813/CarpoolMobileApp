@@ -1,10 +1,23 @@
 import { Text, View, TextInput, Button } from "react-native";
 import WeatherForecastPage from "../components/WeatherForecast";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActionSheetIOS } from 'react-native';
+import { getUserWorkTime } from "@/services/api";
+import WeatherForecast from "../components/WeatherForecast";
+import { UserWorkTime } from "@/types/UserWorkTime";
+import { Link } from "expo-router";
 
 export default function Index() {
   const [text, setText] = useState("");
+  const [day, setDay] = useState("");
+  const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
+
+  useEffect(() => {
+      getUserWorkTime().then((workTime) => {
+        setworkTime(workTime);
+      });
+  }, []);
 
   const saveData = async () => {
     try {
@@ -48,7 +61,14 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-
+      
+      <Link href="/user-work-time">User Work Time</Link>
+      {workTime && workTime.map((item, index) => (
+        <View key={index} style={{ marginVertical: 5 }}>
+          <Text>{item.day}</Text>
+        </View>
+      ))}
+      <Text>{day}</Text>
       <TextInput
         style={{
           height: 40,
