@@ -1,166 +1,115 @@
-import { useState, useEffect } from "react";
-import { Button, Text, View, ScrollView, TouchableOpacity } from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
-import DropDownPicker from "react-native-dropdown-picker";
-import React from "react";
-import { UserWorkTime } from "@/types/UserWorkTime";
-import { getUserWorkTimes } from "@/services/api";
-import { useRouter } from "expo-router";
-import DayPicker from "@/components/DayPicker";
+import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import api from '@/services/api';
 
-export default function UserWorkTimesPage() {
-  const [workTime, setWorkTime] = useState<UserWorkTime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newDay, setNewDay] = useState<string>("Monday"); // Default day
-  const [newStartTime, setNewStartTime] = useState<Date | null>(null);
-  const [newEndTime, setNewEndTime] = useState<Date | null>(null);
-  const [isStartPickerVisible, setStartPickerVisible] = useState(false);
-  const [isEndPickerVisible, setEndPickerVisible] = useState(false);
-  const [isDayPickerVisible, setDayPickerVisible] = useState(false);
-  const router = useRouter();
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-
-  useEffect(() => {
-    getUserWorkTimes().then((workTime) => {
-      setWorkTime(workTime);
-      setLoading(false);
+const UserWorkTime: React.FC = () => {
+    const [workTimes, setWorkTimes] = useState<{ [key: string]: { start_time: string, end_time: string, id_user: number, changed: boolean } }>({
+        Monday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Tuesday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Wednesday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Thursday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Friday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Saturday: { start_time: '', end_time: '', id_user: 1, changed: false },
+        Sunday: { start_time: '', end_time: '', id_user: 1, changed: false },
     });
-  }, []);
 
-  const addWorkTime = () => {
-    if (!newDay || !newStartTime || !newEndTime) {
-      alert("Please fill all fields!");
-      return;
-    }
-
-    const newEntry: UserWorkTime = {
-      day: newDay,
-      start_time: newStartTime,
-      end_time: newEndTime,
-      id_user_work_times: 0,
-      user_id: 0,
+    const handleTimeChange = (day: string, time: string, isStart: boolean) => {
+        setWorkTimes({
+            ...workTimes,
+            [day]: {
+                ...workTimes[day],
+                [isStart ? 'start_time' : 'end_time']: time,
+                changed: true
+            }
+        });
     };
 
-    setWorkTime([...workTime, newEntry]);
-    setNewDay("Monday");
-    setNewStartTime(null);
-    setNewEndTime(null);
-  };
+    const onChange = (day: string, isStart: boolean, event: any, selectedDate?: Date) => {
+        if (selectedDate) {
+            const hours = selectedDate.getHours().toString().padStart(2, '0'); // Local time
+            const minutes = selectedDate.getMinutes().toString().padStart(2, '0'); // Local time
+            const timeString = `${hours}:${minutes}:00`; // Store time in HH:MM:SS format
 
-  return (
-    <View style={{ padding: 20 }}>
-      <View>
-        {/* List Existing Work Times */}
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-          Work Times:
-        </Text>
-        {workTime.map((item, index) => (
-          <View
-            key={index}
-            style={{
-              marginBottom: 10,
-              padding: 10,
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 5,
-            }}
-          >
-            <Text>Day: {item.day}</Text>
-            <Text>Start: {item.start_time.toString()}</Text>
-            <Text>End: {item.end_time.toString()}</Text>
-          </View>
-        ))}
-      </View>
+            handleTimeChange(day, timeString, isStart);
+        }
+    };
 
-      {/* Input Fields */}
-      <Text style={{ fontSize: 16, fontWeight: "bold", marginTop: 20 }}>
-        Add New Work Time:
-      </Text>
+    const saveWorkTimes = async () => {
+        const changedWorkTimes = Object.keys(workTimes).reduce((acc, day) => {
+            if (workTimes[day].changed) {
+                acc[day] = workTimes[day];
+            }
+            return acc;
+        }, {} as { [key: string]: { start_time: string, end_time: string, id_user: number, changed: boolean } });
 
-      {/* Day Picker */}
-      <Text style={{ marginBottom: 5, fontWeight: "bold" }}>Select Day:</Text>
-      <DayPicker days={days} newDay={newDay} setNewDay={setNewDay} />
+        if (Object.keys(changedWorkTimes).length === 0) {
+            alert('No changes to save.');
+            return;
+        }
 
-      {/* Start Time Picker */}
-      <TouchableOpacity
-        onPress={() => setStartPickerVisible(true)}
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 12,
-          marginBottom: 10,
-          borderRadius: 5,
-          backgroundColor: "#f9f9f9",
-        }}
-      >
-        <Text>
-          {newStartTime
-            ? `Start Time: ${newStartTime.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : "Select Start Time"}
-        </Text>
-      </TouchableOpacity>
+        try {
+            const response = await api.post('/userworktime/saveWorkTimes', changedWorkTimes, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            alert('Work times saved successfully!');
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to save work times.');
+        }
+    };
 
-      <DateTimePickerModal
-        isVisible={isStartPickerVisible}
-        mode="time"
-        onConfirm={(date) => {
-          setNewStartTime(date);
-          setStartPickerVisible(false);
-        }}
-        onCancel={() => setStartPickerVisible(false)}
-      />
+    return (
+        <View>
+            <Text>Enter Your Work Time</Text>
+            {Object.keys(workTimes).map((day) => (
+                <View key={day} style={styles.dayContainer}>
+                    <Text style={styles.dayText}>{day}</Text>
+                    <DateTimePicker
+                        value={
+                            workTimes[day].start_time 
+                                ? new Date(1970, 0, 1, ...workTimes[day].start_time.split(':').map(Number)) 
+                                : new Date()
+                        }
+                        mode="time"
+                        display="default"
+                        minuteInterval={15}
+                        timeZoneName={'Europe/Vilnius'}
+                        onChange={(event, selectedDate) => onChange(day, true, event, selectedDate)}
+                    />
+                    <DateTimePicker
+                        value={
+                            workTimes[day].end_time 
+                                ? new Date(1970, 0, 1, ...workTimes[day].end_time.split(':').map(Number)) 
+                                : new Date()
+                        }
+                        mode="time"
+                        display="default"
+                        minuteInterval={15}
+                        timeZoneName={'Europe/Vilnius'}
+                        onChange={(event, selectedDate) => onChange(day, false, event, selectedDate)}
+                    />
+                </View>
+            ))}
+            <Button title="Save" onPress={saveWorkTimes} />
+        </View>
+    );
+};
 
-      {/* End Time Picker */}
-      <TouchableOpacity
-        onPress={() => setEndPickerVisible(true)}
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 12,
-          marginBottom: 10,
-          borderRadius: 5,
-          backgroundColor: "#f9f9f9",
-        }}
-      >
-        <Text>
-          {newEndTime
-            ? `End Time: ${newEndTime.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : "Select End Time"}
-        </Text>
-      </TouchableOpacity>
+const styles = StyleSheet.create({
+    dayContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginVertical: 10,
+    },
+    dayText: {
+        flex: 1,
+        textAlign: 'center',
+    },
+});
 
-      <DateTimePickerModal
-        isVisible={isEndPickerVisible}
-        mode="time"
-        onConfirm={(date) => {
-          setNewEndTime(date);
-          setEndPickerVisible(false);
-        }}
-        onCancel={() => setEndPickerVisible(false)}
-      />
+export default UserWorkTime;
 
-      {/* Add Work Time Button */}
-      <Button title="Add Work Time" onPress={addWorkTime} />
-
-      {/* Navigation Button */}
-      <View style={{ marginTop: 20 }}>
-        <Button title="Go to Home" onPress={() => router.push("/")} />
-      </View>
-    </View>
-  );
-}

@@ -5,3 +5,4 @@ export type UserWorkTime = {
   day: string;
   user_id: number;
 };
+
