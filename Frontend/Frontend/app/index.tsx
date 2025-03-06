@@ -1,9 +1,10 @@
 import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
 import UserWorkTimesPage from "../components/UserWorkTime";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { Link } from "expo-router";
+import { UserWorkTime } from "@/types/UserWorkTime";
+import { getUserWorkTime } from "@/services/api";
 
 export default function Index() {
   const [text, setText] = useState("");
@@ -11,9 +12,9 @@ export default function Index() {
   const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
 
   useEffect(() => {
-      getUserWorkTime().then((workTime) => {
-        setworkTime(workTime);
-      });
+    getUserWorkTime().then((workTime) => {
+      setworkTime(workTime);
+    });
   }, []);
 
   const saveData = async () => {
@@ -56,13 +57,13 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      
-      <Link href="/user-work-time">User Work Time</Link>
-      {workTime && workTime.map((item, index) => (
-        <View key={index} style={{ marginVertical: 5 }}>
-          <Text>{item.day}</Text>
-        </View>
-      ))}
+      <Link href="/pages/UserWorkTime">User Work Time</Link>
+      {workTime &&
+        workTime.map((item, index) => (
+          <View key={index} style={{ marginVertical: 5 }}>
+            <Text>{item.day}</Text>
+          </View>
+        ))}
       <Text>{day}</Text>
       <TextInput
         style={{
@@ -107,7 +108,6 @@ export default function Index() {
       <Text>Main Page</Text>
     </View>
   );
-};
+}
 
-
-export default GoogleNaps;
+// export default GoogleNaps;

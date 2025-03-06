@@ -2,10 +2,6 @@ import axios from 'axios';
 import { baseurl } from '../constants/baseurl';
 import { UserWorkTime } from '../types/UserWorkTime';
 
-const api = axios.create({
-    baseURL: baseurl+'/api',
-    withCredentials: false,
-import { UserWorkTime } from '@/types/UserWorkTime';
 
 const api = axios.create({
     baseURL: baseurl+'/api',
