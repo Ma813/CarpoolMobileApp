@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { baseurl } from '../constants/baseurl';
-import { getData} from './localStorage';
+import { getData } from './localStorage';
+import { navigationRef } from '../app/navigation';
+
 
 const api = axios.create({
     baseURL: baseurl,
@@ -22,9 +24,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     async (response) => response,
     async (error) => {
-        // Handle 401 Unauthorized (indicating an expired access token)
-        if (error.response.status === 401) {
-            window.location.href = '/pages/LoginPage';
+        if (error.response?.status === 401) {
+            if (navigationRef.isReady()) {
+                const currentPage = navigationRef.getCurrentRoute()?.name;
+                if (currentPage !== 'pages/LoginPage') {
+                    navigationRef.navigate('pgaes/LoginPage');
+                }
+            }
         }
 
         return Promise.reject(error);

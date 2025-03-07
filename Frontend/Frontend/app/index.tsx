@@ -1,7 +1,7 @@
 import { View, Button, Text } from "react-native";
 import React, { useEffect, useState } from "react";
 import { styles } from "./styles";
-import { Link } from 'expo-router';
+import { Link, useNavigation } from 'expo-router';
 import { removeData, getData } from "@/services/localStorage";
 
 const GoogleNaps = () => {

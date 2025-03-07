@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { login } from '@/services/authApi';
+import { styles } from './LoginStyles';
 
 import { getWeatherForecast } from '@/services/api';
 
@@ -10,6 +11,12 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigation = useNavigation<any>();
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerShown: false,
+        });
+    }, [navigation]);
 
     const handleLogin = async () => {
         try {
@@ -23,6 +30,7 @@ const LoginPage = () => {
                 setError("Wrong username or password");
             } else {
                 setError("Server error occurred: " + error.message);
+                console.error(error);
             }
         }
     };
@@ -54,31 +62,5 @@ const LoginPage = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    error: {
-        color: 'red',
-    },
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    form: {
-        width: '80%',
-    },
-    heading: {
-        fontSize: 24,
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        marginBottom: 12,
-        paddingHorizontal: 8,
-    },
-});
 
 export default LoginPage;
