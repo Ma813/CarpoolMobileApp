@@ -1,23 +1,31 @@
+import { styles } from "./styles";
+import { Link, useNavigation } from 'expo-router';
+import { removeData, getData } from "@/services/localStorage";
 import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
 import UserWorkTimesPage from "../components/UserWorkTime";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Link } from "expo-router";
 import { UserWorkTime } from "@/types/UserWorkTime";
 import { getUserWorkTime } from "@/services/api";
 
-export default function Index() {
-  const [text, setText] = useState("");
+const GoogleNaps = () => {
+
+  const [username, setUsername] = useState('');
   const [day, setDay] = useState("");
   const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
 
-  useEffect(() => {
-    getUserWorkTime().then((workTime) => {
-      setworkTime(workTime);
-    });
-  }, []);
+  const handleLogout = () => {
+    // Logout logic here
+    removeData('token');
+    removeData('username');
+    fetchData();
+  }
 
-  const saveData = async () => {
+  const fetchData = async () => {
+    const user = await getData('username');
+    setUsername(user);
+  };
+    const saveData = async () => {
     try {
       await AsyncStorage.setItem("user_name", JSON.stringify({ text }));
       alert("Data saved!");
@@ -49,65 +57,40 @@ export default function Index() {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+    getUserWorkTime().then((workTime) => {
+      setworkTime(workTime);
+    });
+  }, []);
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Link href="/pages/UserWorkTime">User Work Time</Link>
-      {workTime &&
-        workTime.map((item, index) => (
-          <View key={index} style={{ marginVertical: 5 }}>
-            <Text>{item.day}</Text>
+    <View style={styles.container}>
+      {!username ? (
+        <>
+          <Text>Not logged in</Text>
+          <Link href="/pages/LoginPage" style={styles.button}>
+            Login
+          </Link>
+        </>
+      ) : (
+        <>
+          <Text>Logged in as: {username}</Text>
+          <View style={styles.container}>
+            <Link href="/pages/WeatherForecast" style={styles.button}>
+              Weather Forecast
+            </Link>
+  
+            <Link href="/pages/UserWorkTime" style={styles.button}>
+              Work Times
+            </Link>
+  
+            <Button title="Logout" onPress={handleLogout} />
           </View>
-        ))}
-      <Text>{day}</Text>
-      <TextInput
-        style={{
-          height: 40,
-          borderColor: "gray",
-          borderWidth: 1,
-          marginBottom: 20,
-          width: "80%",
-          paddingHorizontal: 10,
-        }}
-        placeholder="Type here"
-        onChangeText={setText}
-        value={text}
-      />
-      <Button
-        title="Submit"
-        onPress={() => {
-          saveData().catch((error) => {
-            console.error("Error saving data:", error);
-          });
-        }}
-      />
-
-      <Button
-        title="Retrieve"
-        onPress={() => {
-          getData().catch((error) => {
-            console.error("Error retrieving data:", error);
-          });
-        }}
-      />
-
-      <Button
-        title="Remove"
-        onPress={() => {
-          removeData().catch((error) => {
-            console.error("Error removing data:", error);
-          });
-        }}
-      />
-
-      <Text>Main Page</Text>
+        </>
+      )}
     </View>
   );
-}
+};
 
-// export default GoogleNaps;
+export default GoogleNaps;
