@@ -1,12 +1,18 @@
-import { View, Button, Text } from "react-native";
-import React, { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { Link, useNavigation } from 'expo-router';
 import { removeData, getData } from "@/services/localStorage";
+import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
+import UserWorkTimesPage from "../components/UserWorkTime";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserWorkTime } from "@/types/UserWorkTime";
+import { getUserWorkTime } from "@/services/api";
 
 const GoogleNaps = () => {
 
   const [username, setUsername] = useState('');
+  const [day, setDay] = useState("");
+  const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
 
   const handleLogout = () => {
     // Logout logic here
@@ -19,9 +25,43 @@ const GoogleNaps = () => {
     const user = await getData('username');
     setUsername(user);
   };
+    const saveData = async () => {
+    try {
+      await AsyncStorage.setItem("user_name", JSON.stringify({ text }));
+      alert("Data saved!");
+    } catch (error) {
+      console.error("Error saving data:", error);
+    }
+  };
+
+  const getData = async () => {
+    try {
+      const value = await AsyncStorage.getItem("user_name");
+      if (value !== null) {
+        const parsedValue = JSON.parse(value);
+        alert("Retrieved data: " + parsedValue.text);
+      } else {
+        alert("No data found");
+      }
+    } catch (error) {
+      console.error("Error retrieving data:", error);
+    }
+  };
+
+  const removeData = async () => {
+    try {
+      await AsyncStorage.removeItem("user_name");
+      alert("Data removed!");
+    } catch (error) {
+      console.error("Error removing data:", error);
+    }
+  };
 
   useEffect(() => {
     fetchData();
+    getUserWorkTime().then((workTime) => {
+      setworkTime(workTime);
+    });
   }, []);
 
   return (
@@ -41,7 +81,7 @@ const GoogleNaps = () => {
               Weather Forecast
             </Link>
   
-            <Link href="/pages/WorkTimesPage" style={styles.button}>
+            <Link href="/pages/UserWorkTime" style={styles.button}>
               Work Times
             </Link>
   

@@ -2,10 +2,11 @@ import axios from 'axios';
 import { baseurl } from '../constants/baseurl';
 import { getData } from './localStorage';
 import { navigationRef } from '../app/navigation';
-
+import { UserWorkTime } from '../types/UserWorkTime';
 
 const api = axios.create({
-    baseURL: baseurl,
+    baseURL: baseurl+'/api',
+    withCredentials: true,
 });
 
 api.interceptors.request.use(
@@ -44,15 +45,14 @@ export type WeatherForecast = {
     summary: string;
 };
 
-export type WorkTime = {
-    id_user_work_times: number;
-    start_time: string;
-    end_time: string;
-    day: string;
-};
-
 export const getWeatherForecast = async (): Promise<WeatherForecast[]> => {
     const response = await api.get('/WeatherForecast');
+export const getUserWorkTimes = async (): Promise<UserWorkTime[]> => {
+    const response = await api.get('/userworktime');
+    return response.data;
+}
+export const getUserWorkTime = async (): Promise<UserWorkTime[]> => {
+    const response = await api.get('/userworktime/getUserWorkTimes');
     return response.data;
 }
 
