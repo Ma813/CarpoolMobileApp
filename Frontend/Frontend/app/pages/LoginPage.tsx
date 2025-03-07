@@ -4,8 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { login } from '@/services/authApi';
 import { styles } from './LoginStyles';
 
-import { getWeatherForecast } from '@/services/api';
-
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');

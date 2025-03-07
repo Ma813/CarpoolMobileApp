@@ -47,17 +47,6 @@ export type WeatherForecast = {
 
 export const getWeatherForecast = async (): Promise<WeatherForecast[]> => {
     const response = await api.get('/WeatherForecast');
-export const getUserWorkTimes = async (): Promise<UserWorkTime[]> => {
-    const response = await api.get('/userworktime');
-    return response.data;
-}
-export const getUserWorkTime = async (): Promise<UserWorkTime[]> => {
-    const response = await api.get('/userworktime/getUserWorkTimes');
-    return response.data;
-}
-
-export const getUserWorkTimes = async (): Promise<any> => {
-    const response = await api.get('/api/userworktime');
     return response.data;
 }
 

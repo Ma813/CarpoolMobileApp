@@ -6,7 +6,7 @@ import UserWorkTimesPage from "../components/UserWorkTime";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserWorkTime } from "@/types/UserWorkTime";
-import { getUserWorkTime } from "@/services/api";
+import { getUserWorkTimes } from "@/services/workTimeApi";
 
 const GoogleNaps = () => {
 
@@ -22,44 +22,13 @@ const GoogleNaps = () => {
   }
 
   const fetchData = async () => {
-    const user = await getData('username');
-    setUsername(user);
-  };
-    const saveData = async () => {
-    try {
-      await AsyncStorage.setItem("user_name", JSON.stringify({ text }));
-      alert("Data saved!");
-    } catch (error) {
-      console.error("Error saving data:", error);
-    }
-  };
-
-  const getData = async () => {
-    try {
-      const value = await AsyncStorage.getItem("user_name");
-      if (value !== null) {
-        const parsedValue = JSON.parse(value);
-        alert("Retrieved data: " + parsedValue.text);
-      } else {
-        alert("No data found");
-      }
-    } catch (error) {
-      console.error("Error retrieving data:", error);
-    }
-  };
-
-  const removeData = async () => {
-    try {
-      await AsyncStorage.removeItem("user_name");
-      alert("Data removed!");
-    } catch (error) {
-      console.error("Error removing data:", error);
-    }
-  };
+    const username = await getData('username');
+    setUsername(username);
+  }
 
   useEffect(() => {
     fetchData();
-    getUserWorkTime().then((workTime) => {
+    getUserWorkTimes().then((workTime) => {
       setworkTime(workTime);
     });
   }, []);

@@ -9,7 +9,7 @@ using System.Text;
 namespace Backend.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/Auth")]
     public class AuthController : Controller
     {
         private readonly AppDbContext _context;

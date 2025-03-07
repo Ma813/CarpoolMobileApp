@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getUserWorkTimes, WorkTime } from '@/services/api';
+// import { getUserWorkTimes, WorkTime } from '@/services/api';
+import { getUserWorkTimes } from '@/services/workTimeApi';
+import { UserWorkTime } from '@/types/UserWorkTime';
 import { View, Text } from 'react-native';
 
 const WorkTimesPage = () => {
-    const [workTimes, setWorkTimes] = useState<WorkTime[] | null>(null);
+    const [workTimes, setWorkTimes] = useState<UserWorkTime[] | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -29,8 +31,8 @@ const WorkTimesPage = () => {
             <Text>Work Times</Text>
             {workTimes.map((workTime) => (
                 <View key={workTime.id_user_work_times}>
-                    <Text>{workTime.start_time}</Text>
-                    <Text>{workTime.end_time}</Text>
+                    <Text>{workTime.start_time.toString()}</Text>
+                    <Text>{workTime.end_time.toString()}</Text>
                     <Text>{workTime.day}</Text>
                 </View>
             ))}
