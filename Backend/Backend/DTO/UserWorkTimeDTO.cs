@@ -4,6 +4,6 @@
     {
         public string start_time { get; set; }
         public string end_time { get; set; }
-        public int id_user { get; set; }
+        public bool working { get; set; }
     }
 }
