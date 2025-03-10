@@ -1,9 +1,42 @@
 import axios from 'axios';
 import { baseurl } from '../constants/baseurl';
+import { getData } from './localStorage';
+import { navigationRef } from '../app/navigation';
+import { UserWorkTime } from '../types/UserWorkTime';
 
 const api = axios.create({
-    baseURL: baseurl,
+    baseURL: baseurl+'/api',
+    withCredentials: true,
 });
+
+api.interceptors.request.use(
+    async (config) => {
+        const token = await getData('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    async (error) => {
+        return Promise.reject(error);
+    }
+);
+
+api.interceptors.response.use(
+    async (response) => response,
+    async (error) => {
+        if (error.response?.status === 401) {
+            if (navigationRef.isReady()) {
+                const currentPage = navigationRef.getCurrentRoute()?.name;
+                if (currentPage !== 'pages/LoginPage') {
+                    navigationRef.navigate('pgaes/LoginPage');
+                }
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
 
 export type WeatherForecast = {
     date: string;
