@@ -13,7 +13,7 @@ const RegisterPage = () => {
             await signup({ username, password });
         } catch (error: any) {
             if (error.response) {
-                setError("Server error occurred: " + error.error);
+                setError(error.response.data);
         }
     }
     };

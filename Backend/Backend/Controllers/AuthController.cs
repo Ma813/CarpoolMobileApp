@@ -41,7 +41,12 @@ namespace Backend.Controllers
 
         [HttpPost("signup")]
         public async Task<ActionResult<User>> Signup([FromBody] SignupDto signup)
-        {
+        { 
+            var existingUser = await _context.Users.SingleOrDefaultAsync(u => u.Username == signup.Username);
+            if (existingUser != null)
+            {
+                return Conflict("User with such username already exists");
+            }
             if (signup.Username == "" || signup.Password == "")
             {
                 return BadRequest("Username and password cannot be empty.");
@@ -60,14 +65,7 @@ namespace Backend.Controllers
             {
                 return BadRequest("Password must contain at least one special character or a number.");
             }
-            
-            var existingUser = await _context.Users.SingleOrDefaultAsync(u => u.Username == signup.Username);
-
-            if (existingUser != null)
-            {
-                return Conflict("User with such username already exists");
-            }
-
+        
             var sha256 = SHA256.Create();
             var hashedPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(signup.Password)));
             signup.Password = hashedPassword;
