@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { signup } from '@/services/authApi';
+import { useNavigation } from '@react-navigation/native';
 import { getWeatherForecast } from '@/services/api';
 
 const RegisterPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-
+    const navigation = useNavigation<any>();
+    
     const handleRegister = async () => {
         try {
-            await signup({ username, password });
+            await signup({ username, password }).then(() => {
+                console.log('Registered');
+                navigation.navigate('pages/LoginPage');});
         } catch (error: any) {
             if (error.response) {
                 setError(error.response.data);
