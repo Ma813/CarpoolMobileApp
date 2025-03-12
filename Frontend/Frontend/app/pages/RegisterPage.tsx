@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { signup } from '@/services/authApi';
 import { useNavigation } from '@react-navigation/native';
 import { getWeatherForecast } from '@/services/api';
+import { styles } from './LoginStyles';
 
 const RegisterPage = () => {
     const [username, setUsername] = useState('');
@@ -49,31 +50,4 @@ const RegisterPage = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    error: {
-        color: 'red',
-    },
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    form: {
-        width: '80%',
-    },
-    heading: {
-        fontSize: 24,
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        marginBottom: 12,
-        paddingHorizontal: 8,
-    },
-});
-
 export default RegisterPage;
