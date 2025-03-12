@@ -2,7 +2,6 @@ import { styles } from "./styles";
 import { Link, useNavigation } from 'expo-router';
 import { removeData, getData } from "@/services/localStorage";
 import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
-import UserWorkTimesPage from "../components/UserWorkTime";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserWorkTime } from "@/types/UserWorkTime";
@@ -41,14 +40,17 @@ const GoogleNaps = () => {
           <Link href="/pages/LoginPage" style={styles.button}>
             Login
           </Link>
+          <Link href="/pages/RegisterPage" style={styles.button}>
+            Register
+          </Link>
         </>
       ) : (
         <>
           <Text>Logged in as: {username}</Text>
           <View style={styles.container}>
-            <Link href="/pages/WeatherForecast" style={styles.button}>
+            {/* <Link href="/pages/WeatherForecast" style={styles.button}>
               Weather Forecast
-            </Link>
+            </Link> */}
   
             <Link href="/pages/UserWorkTime" style={styles.button}>
               Work Times
