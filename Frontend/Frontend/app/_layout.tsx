@@ -14,6 +14,7 @@ export default function Layout() {
       <Stack.Screen name="pages/LoginPage" options={{ title: 'Login', gestureEnabled: false, headerShown: false  }} />
       <Stack.Screen name="pages/WeatherForecast" options={{ title: 'Weather Forecast', gestureEnabled: false  }} />
       <Stack.Screen name="pages/UserWorkTime" options={{ title: 'Work Times', gestureEnabled: false  }} />
+      <Stack.Screen name="pages/RegisterPage" options={{ title: 'Register', gestureEnabled: false  }} />
     </Stack>
   );
 }

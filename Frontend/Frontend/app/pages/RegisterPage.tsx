@@ -35,6 +35,7 @@ const RegisterPage = () => {
                     value={username}
                     onChangeText={setUsername}
                     placeholder="Enter username"
+                    placeholderTextColor="#888"
                     autoCapitalize="none"
                 />
                 <Text>Password:</Text>
@@ -43,6 +44,7 @@ const RegisterPage = () => {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Enter password"
+                    placeholderTextColor="#888"
                     secureTextEntry
                 />
                 <Button title="Register" onPress={handleRegister} />
