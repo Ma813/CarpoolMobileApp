@@ -1,27 +1,32 @@
 import { styles } from "./styles";
 import { Link, useNavigation } from "expo-router";
 import { removeData, getData } from "@/services/localStorage";
-import { Text, View, TextInput, Button } from "react-native";
+import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
 import { UserWorkTime } from "@/types/UserWorkTime";
 import { getUserWorkTimes } from "@/services/workTimeApi";
+import LoginPage from "./pages/LoginPage";
 
 const GoogleNaps = () => {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(null);
   const [day, setDay] = useState("");
   const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
+  const navigation = useNavigation<any>();
 
-  const handleLogout = () => {
-    // Logout logic here
-    removeData("token");
-    removeData("username");
+  const handleLogout = async () => {
+
+    await removeData('token');
+    await removeData('username');
     fetchData();
   };
 
   const fetchData = async () => {
     const username = await getData("username");
     setUsername(username);
-  };
+    if (!username) {
+      navigation.navigate('pages/LoginPage');
+    }
+  }
 
   useEffect(() => {
     fetchData();
@@ -30,22 +35,20 @@ const GoogleNaps = () => {
     });
   }, []);
 
+  if (!username) {
+    return <View><Text>Loading...</Text></View>
+  }
+
   return (
-    <View style={styles.container}>
-      {!username ? (
-        <>
-          <Text>Not logged in</Text>
-          <Link href="/pages/LoginPage" style={styles.button}>
-            Login
-          </Link>
-        </>
-      ) : (
-        <>
+    
+        <View style={styles.container}>
           <Text>Logged in as: {username}</Text>
+
           <View style={styles.container}>
-            <Link href="/pages/WeatherForecast" style={styles.button}>
+            {/* Uncomment and use if needed */}
+            {/* <Link href="/pages/WeatherForecast" style={styles.button}>
               Weather Forecast
-            </Link>
+            </Link> */}
 
             <Link href="/pages/UserWorkTime" style={styles.button}>
               Work Times
@@ -53,13 +56,9 @@ const GoogleNaps = () => {
             <Link href="/pages/CarSelect" style={styles.button}>
               Add Car
             </Link>
-
             <Button title="Logout" onPress={handleLogout} />
           </View>
-        </>
-      )}
-    </View>
-  );
-};
+        </View>
+      )};
 
 export default GoogleNaps;

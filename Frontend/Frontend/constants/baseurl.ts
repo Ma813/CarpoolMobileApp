@@ -7,9 +7,6 @@
     to find local IP run:
     - ipconfig (Windows)
     - ipconfig getifaddr en0 (Mac)
-    
-
 */
 
-//export const baseurl = 'http://localhost:5125';
-export const baseurl = 'http://192.168.1.108:5125';
+export const baseurl = process.env.EXPO_PUBLIC_BASE_URL || 'http://default-url.com';

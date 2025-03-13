@@ -1,33 +1,67 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-    error: {
-        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-        color: 'red',
-        padding: 10,
-        borderRadius: 5,
-        textAlign: 'center',
-        fontWeight: 'bold'
-    },
     container: {
         flex: 1,
-        justifyContent: 'flex-start',
+        backgroundColor: '#f5f5f5',
+    },
+    scrollView: {
+        flexGrow: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: '25%',
+        padding: 20,
     },
     form: {
-        width: '80%',
+        width: '100%',
+        maxWidth: 400,
+        backgroundColor: '#ffffff',
+        padding: 20,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
     },
     heading: {
         fontSize: 24,
-        marginBottom: 20,
+        fontWeight: 'bold',
         textAlign: 'center',
+        marginBottom: 20,
+        color: '#333',
     },
     input: {
-        height: 40,
-        borderColor: 'gray',
+        width: '100%',
+        height: 45,
         borderWidth: 1,
-        marginBottom: 12,
-        paddingHorizontal: 8,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        marginBottom: 15,
+        backgroundColor: '#fff',
+        fontSize: 16,
+        color: '#333',
+    },
+    error: {
+        color: 'red',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    button: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    text: {
+        marginTop: 15,
+        textAlign: 'center',
+        color: '#333',
     },
 });
