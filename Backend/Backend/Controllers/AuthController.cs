@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.CodeAnalysis.Scripting;
 
 namespace Backend.Controllers
 {
@@ -25,11 +26,7 @@ namespace Backend.Controllers
         {
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == loginModel.Username);
 
-            var sha256 = SHA256.Create();
-            var hashedPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(loginModel.Password)));
-            loginModel.Password = hashedPassword;
-
-            if (user == null || loginModel.Password != user.Password) // hashing needed
+            if (user == null || !BCrypt.Net.BCrypt.Verify(loginModel.Password, user.Password))
             {
                 return Unauthorized();
             }
@@ -41,7 +38,7 @@ namespace Backend.Controllers
 
         [HttpPost("signup")]
         public async Task<ActionResult<User>> Signup([FromBody] SignupDto signup)
-        { 
+        {
             var existingUser = await _context.Users.SingleOrDefaultAsync(u => u.Username == signup.Username);
             if (existingUser != null)
             {
@@ -61,19 +58,18 @@ namespace Backend.Controllers
             {
                 return BadRequest("Password must contain both uppercase and lowercase letters.");
             }
-             if (!signup.Password.Any(char.IsDigit) && !signup.Password.Any(ch => "!@#$%^&*()-_=+[]{}|;:'\",.<>?/".Contains(ch)))
+            if (!signup.Password.Any(char.IsDigit) && !signup.Password.Any(ch => "!@#$%^&*()-_=+[]{}|;:'\",.<>?/".Contains(ch)))
             {
                 return BadRequest("Password must contain at least one special character or a number.");
             }
-        
-            var sha256 = SHA256.Create();
-            var hashedPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(signup.Password)));
-            signup.Password = hashedPassword;
+
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(signup.Password);
+
 
             var user = new User
             {
                 Username = signup.Username,
-                Password = signup.Password,
+                Password = hashedPassword,
             };
 
             _context.Users.Add(user);

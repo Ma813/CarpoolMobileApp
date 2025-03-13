@@ -67,7 +67,7 @@ CREATE TABLE `user_work_times` (
 
 LOCK TABLES `user_work_times` WRITE;
 /*!40000 ALTER TABLE `user_work_times` DISABLE KEYS */;
-INSERT INTO `user_work_times` VALUES (1,'00:00:09','00:00:10','Monday',4),(2,'09:00:00','17:00:00','Tuesday',4),(3,'09:30:00','17:00:00','Tuesday',3);
+INSERT INTO `user_work_times` VALUES (1,'00:00:09','00:00:10','Monday',1),(2,'09:00:00','17:00:00','Tuesday',1),(3,'09:30:00','17:00:00','Tuesday',1);
 /*!40000 ALTER TABLE `user_work_times` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -81,7 +81,7 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `username` varchar(45) NOT NULL,
-  `password` varchar(45) NOT NULL,
+  `password` varchar(60) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`)
@@ -93,11 +93,8 @@ CREATE TABLE `users` (
 --
 
 LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (3,'jonas','RzKH+CmNunFjqJeQiVj3wOrnM+JdLgJ5kuou3JvtL6g='),(4,'string','RzKH+CmNunFjqJeQiVj3wOrnM+JdLgJ5kuou3JvtL6g=');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+INSERT INTO `users` VALUES (1,'jonas','$2a$11$r14tGb6EpvlRPjAVeD/3KO2GBFWkR7P/vp67zDpfi9GJD3w85XwFy'),(2,'petras','$2a$11$jyPU.SnJTQZbCrWAXuRLR.q8WJCAmhhA4u6b7HtKO4xf09IrLlk5e'),(3,'antanas','$2a$11$NsduFYqCl22DAn/o3rH5quYr4HfXiiIS2aLkhtZzanUi8VVaK6GJq');
 UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
