@@ -22,9 +22,10 @@ namespace Backend.Controllers
         [HttpPost("addCar")]
         public async Task<ActionResult> AddCar([FromBody] CarsDto carDto)
         {
-            if (carDto == null || string.IsNullOrEmpty(carDto.brand) || string.IsNullOrEmpty(carDto.model))
+            Console.WriteLine(carDto);
+            if (carDto == null || string.IsNullOrEmpty(carDto.brand) || string.IsNullOrEmpty(carDto.model) || string.IsNullOrEmpty(carDto.licensePlate))
             {
-                return BadRequest("Brand and Model are required.");
+                return BadRequest("All fields are required.");
             }
 
             var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -40,6 +41,7 @@ namespace Backend.Controllers
             {
                 brand = carDto.brand,
                 model = carDto.model,
+                license_plate = carDto.licensePlate,
                 user_id = user.Id
             };
 

@@ -1,66 +1,51 @@
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  Switch,
-  TextInput,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "@/services/api";
+import { useNavigation } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, StyleSheet, Button } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 
 const CarSelectPage: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [licensePlate, setLicensePlate] = useState("");
-  const [make, setMake] = useState("");
-  const [allMakes, setAllMakes] = useState<{ label: string; value: string }[]>(
-    []
-  );
+  const [brand, setbrand] = useState<string | null>(null);
+  const [allbrands, setAllBrands] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [allModels, setAllModels] = useState<
     { label: string; value: string }[]
   >([]);
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
-  const [color, setColor] = useState("");
+  const [model, setModel] = useState<string | null>(null);
 
-  const [openMakeDropdown, setOpenMakeDropdown] = useState(false);
+  const [openbrandDropdown, setOpenbrandDropdown] = useState(false);
   const [openModelDropdown, setOpenModelDropdown] = useState(false);
 
-  const onModelOpen = useCallback(() => {
-    setOpenMakeDropdown(false);
-  }, []);
-  const onMakeOpen = useCallback(() => {
-    setOpenModelDropdown(false);
+  useEffect(() => {
+    fetchCarBrands();
   }, []);
 
-  const fetchCarMakes = async () => {
+  const fetchCarBrands = async () => {
     try {
-      const carMakes = await fetch(
-        "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json",
-        {
-          method: "GET",
-        }
-      ).then((response) => response.json());
+      const response = await fetch(
+        "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json"
+      );
+      const carMakes = await response.json();
       const formattedMakes = carMakes.Results.map((make: any) => ({
         label: make.Make_Name,
         value: make.Make_Name,
       })).filter((make: any) => make.value);
-      setAllMakes(formattedMakes);
+      setAllBrands(formattedMakes);
     } catch (error) {
       console.error("Error fetching car makes:", error);
       alert("Failed to fetch car makes.");
     }
   };
-  const fetchCarModels = async (make: string) => {
+
+  const fetchCarModels = async (selectedMake: string) => {
     try {
-      const carModels = await fetch(
-        `https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/${make}?format=json`,
-        {
-          method: "GET",
-        }
-      ).then((response) => response.json());
+      const response = await fetch(
+        `https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/${selectedMake}?format=json`
+      );
+      const carModels = await response.json();
       const formattedModels = carModels.Results.map((models: any) => ({
         label: models.Model_Name,
         value: models.Model_Name,
@@ -71,49 +56,81 @@ const CarSelectPage: React.FC = () => {
       alert("Failed to fetch car models.");
     }
   };
-  useEffect(() => {
-    fetchCarMakes();
-  }, []);
 
-  const CapitalizeLicensePlate = (input: string) => {
-    const uppercasedInput = input.toUpperCase();
-    setLicensePlate(uppercasedInput);
+  const submitCar = async () => {
+    if (!brand || !model || !licensePlate) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      const carData = {
+        brand,
+        model,
+        licensePlate,
+      };
+      const response = await api.post("/cars/addCar", carData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      alert("Car data saved successfully!");
+      navigation.navigate("index");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to save car data.");
+    }
   };
+
   return (
-    <View>
-      <Text>Make:</Text>
+    <View style={styles.container}>
+      <Text>Brand:</Text>
       <DropDownPicker
-        open={openMakeDropdown}
-        onOpen={onMakeOpen}
-        value={make}
-        items={allMakes}
-        setOpen={setOpenMakeDropdown}
-        setValue={setMake}
+        open={openbrandDropdown}
+        value={brand}
+        items={allbrands}
+        setOpen={setOpenbrandDropdown}
+        setValue={(callback) => {
+          const newbrand =
+            typeof callback === "function" ? callback(brand) : callback;
+          setbrand(newbrand);
+          setModel(null); // Reset model when brand changes
+          fetchCarModels(newbrand);
+        }}
         searchable={true}
         style={styles.dropdown}
-        dropDownContainerStyle={styles.dropdownContainer}
-        placeholder="Select a car make"
+        dropDownContainerStyle={styles.dropdownList}
+        placeholder="Select a car brand"
       />
-      <Text>Model:</Text>
-      <DropDownPicker
-        open={openModelDropdown}
-        onOpen={onModelOpen}
-        value={model}
-        items={allModels}
-        setOpen={setOpenModelDropdown}
-        setValue={setModel}
-        searchable={true}
-        placeholder="Select a car model"
-      />
+
+      {/* Show Model Dropdown only when brand is selected */}
+      {brand ? (
+        <>
+          <Text>Model:</Text>
+          <DropDownPicker
+            open={openModelDropdown}
+            value={model}
+            items={allModels}
+            setOpen={setOpenModelDropdown}
+            setValue={setModel}
+            searchable={true}
+            placeholder="Select a car model"
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownList}
+          />
+        </>
+      ) : null}
+
       <Text>License plate:</Text>
       <TextInput
         style={styles.input}
         value={licensePlate}
-        onChangeText={CapitalizeLicensePlate}
+        onChangeText={(input) => setLicensePlate(input.toUpperCase())}
         placeholder="Enter license plate"
         placeholderTextColor={"#000"}
         autoCapitalize="characters"
       />
+      <Button title="Save" onPress={submitCar} />
     </View>
   );
 };
@@ -121,6 +138,10 @@ const CarSelectPage: React.FC = () => {
 export default CarSelectPage;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
   input: {
     height: 40,
     borderColor: "gray",
@@ -129,9 +150,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   dropdown: {
-    zIndex: 10, // Ensure the dropdown is in front
+    marginBottom: 16,
   },
-  dropdownContainer: {
-    zIndex: 10, // Ensure the dropdown container is in front
+  dropdownList: {
+    zIndex: 1000,
+    elevation: 5,
   },
 });
