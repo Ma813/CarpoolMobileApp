@@ -29,6 +29,10 @@ export default function Layout() {
         options={{ title: "Car Select", gestureEnabled: false }}
       />
       <Stack.Screen
+        name="pages/Addresses"
+        options={{ title: 'Home/Work address', gestureEnabled: false }} />
+
+      <Stack.Screen
         name="pages/Map"
         options={{ title: "View Map", gestureEnabled: false }}
       />
@@ -36,6 +40,6 @@ export default function Layout() {
         name="pages/RegisterPage"
         options={{ title: "Register", gestureEnabled: false }}
       />
-    </Stack>
+    </Stack >
   );
 }

@@ -61,6 +61,9 @@ const GoogleNaps = () => {
         <Link href="/pages/Map" style={styles.button}>
           View Map
         </Link>
+            <Link href="/pages/Addresses" style={styles.button}>
+              Home/Work address
+            </Link>
         <Button title="Logout" onPress={handleLogout} />
       </View>
     </View>
