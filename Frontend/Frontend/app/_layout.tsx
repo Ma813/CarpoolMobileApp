@@ -17,6 +17,7 @@ export default function Layout() {
         options={{ title: "Car Select", gestureEnabled: false }}
       />
       <Stack.Screen name="pages/RegisterPage" options={{ title: 'Register', gestureEnabled: false  }} />
+      <Stack.Screen name="pages/Addresses" options={{ title: 'Home/Work address', gestureEnabled: false  }} />
     </Stack>
   );
 }
