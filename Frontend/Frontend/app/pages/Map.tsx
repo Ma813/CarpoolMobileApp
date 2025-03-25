@@ -23,28 +23,33 @@ const Map = () => {
   } | null>(null); // Dynamic destination
 
   // Fetch the current location of the device
-  const fetchCurrentLocation = async () => {
-    try {
-      // Request location permissions
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Location permission is required to use this feature."
-        );
-        return;
-      }
-
-      // Get the current location
-      const location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+  const fetchCurrentLocation = () => {
+    // Request location permissions
+    Location.requestForegroundPermissionsAsync()
+      .then(({ status }) => {
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission Denied",
+            "Location permission is required to use this feature."
+          );
+          throw new Error("Location permission not granted");
+        }
+        // Get the current location
+        return Location.getCurrentPositionAsync({});
+      })
+      .then((location) => {
+        setCurrentLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        console.log("Current location:", {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching current location:", error);
       });
-      console.log("Current location:", currentLocation);
-    } catch (error) {
-      console.error("Error fetching current location:", error);
-    }
   };
 
   useEffect(() => {
@@ -54,7 +59,7 @@ const Map = () => {
   const fetchRoute = async () => {
     if (!destination) return; // Skip if no destination is set
 
-    const accessToken = process.env.MAPBOX_ACCESS_TOKEN; // Replace with your Mapbox token
+    const accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN; // Replace with your Mapbox token
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${accessToken}`;
 
     try {

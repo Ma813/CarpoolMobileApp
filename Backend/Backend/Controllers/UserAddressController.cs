@@ -36,6 +36,15 @@ namespace Backend.Controllers
 
             var user = await _context.Users.FindAsync(int.Parse(userId));
             if (user == null) return NotFound("User not found");
+            
+            var existingAddress = await _context.UserAddresses.FirstOrDefaultAsync(a => a.user_id == user.Id);
+            if (existingAddress != null)
+            {
+                existingAddress.work_address = addressDto.work_address;
+                existingAddress.home_address = addressDto.home_address;
+                await _context.SaveChangesAsync();
+                return Ok("Addresses updated successfully.");
+            }
 
             var address = new UserAddress
             {

@@ -1,15 +1,16 @@
 import api from './api';
 
-type Address = {
-    address: string;
+export type Addresses = {
+    home_address: string;
+    work_address: string;
 };
 
-const CONTROLLER_NAME = 'Addresses';
+const CONTROLLER_NAME = 'addresses';
 
-export const postAddress = async (address: Address) => {
-    return api.post(`/${CONTROLLER_NAME}`, address);
+export const postAddresses = async (address: Addresses) => {
+    return api.post(`/${CONTROLLER_NAME}/addAddresses`, address);
 };
 
 export const getAddresses = async () => {
-    return api.get(`/${CONTROLLER_NAME}`);
+    return api.get(`/${CONTROLLER_NAME}/getAddresses`);
 };

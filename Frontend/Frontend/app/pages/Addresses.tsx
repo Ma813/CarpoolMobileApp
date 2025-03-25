@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Button } from "react-native";
 import { Suggestion, fetchAddresses } from "@/services/mapbox";
+import { Addresses, postAddresses, getAddresses } from "@/services/addressesApi";
 
 const AddressSearch: React.FC = () => {
     const [homeQuery, setHomeQuery] = useState<string>("");
@@ -11,6 +12,32 @@ const AddressSearch: React.FC = () => {
     const [workSuggestions, setWorkSuggestions] = useState<Suggestion[]>([]);
     const [selectedWorkAddress, setSelectedWorkAddress] = useState<string | null>(null);
 
+    const handleSaveAddresses = () => {
+        console.log("Save addresses:\n", { selectedHomeAddress, selectedWorkAddress });
+        if (selectedHomeAddress && selectedWorkAddress) {
+            try{
+            postAddresses({ home_address: selectedHomeAddress, work_address: selectedWorkAddress });
+            }
+            catch (error) {
+                console.error("Error saving addresses:", error);
+            }
+        } else {
+            console.error("Both addresses must be selected before saving.");
+        }
+    };
+
+    useEffect(() => {
+        getAddresses().then((response) => {
+            const addresses = response.data;
+            if (addresses) {
+                setSelectedHomeAddress(addresses.home_address);
+                setSelectedWorkAddress(addresses.work_address);
+                setHomeQuery(addresses.home_address);
+                setWorkQuery(addresses.work_address);
+            }
+        });
+    }
+    , []);
 
 
     return (
@@ -69,7 +96,7 @@ const AddressSearch: React.FC = () => {
             )}
             />
 
-            <Button title="Save addresses" onPress={() => console.log("Save addresses:\n", { selectedHomeAddress, selectedWorkAddress })} />
+            <Button title="Save addresses" onPress={handleSaveAddresses} />
         </View>
     );
 };
