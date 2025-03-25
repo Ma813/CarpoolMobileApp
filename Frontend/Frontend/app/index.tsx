@@ -14,9 +14,8 @@ const GoogleNaps = () => {
   const navigation = useNavigation<any>();
 
   const handleLogout = async () => {
-
-    await removeData('token');
-    await removeData('username');
+    await removeData("token");
+    await removeData("username");
     fetchData();
   };
 
@@ -24,9 +23,9 @@ const GoogleNaps = () => {
     const username = await getData("username");
     setUsername(username);
     if (!username) {
-      navigation.navigate('pages/LoginPage');
+      navigation.navigate("pages/LoginPage");
     }
-  }
+  };
 
   useEffect(() => {
     fetchData();
@@ -36,32 +35,39 @@ const GoogleNaps = () => {
   }, []);
 
   if (!username) {
-    return <View><Text>Loading...</Text></View>
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
   }
 
   return (
-    
-        <View style={styles.container}>
-          <Text>Logged in as: {username}</Text>
+    <View style={styles.container}>
+      <Text>Logged in as: {username}</Text>
 
-          <View style={styles.container}>
-            {/* Uncomment and use if needed */}
-            {/* <Link href="/pages/WeatherForecast" style={styles.button}>
+      <View style={styles.container}>
+        {/* Uncomment and use if needed */}
+        {/* <Link href="/pages/WeatherForecast" style={styles.button}>
               Weather Forecast
             </Link> */}
 
-            <Link href="/pages/UserWorkTime" style={styles.button}>
-              Work Times
-            </Link>
-            <Link href="/pages/CarSelect" style={styles.button}>
-              Add Car
-            </Link>
+        <Link href="/pages/UserWorkTime" style={styles.button}>
+          Work Times
+        </Link>
+        <Link href="/pages/CarSelect" style={styles.button}>
+          Add Car
+        </Link>
+        <Link href="/pages/Map" style={styles.button}>
+          View Map
+        </Link>
             <Link href="/pages/Addresses" style={styles.button}>
               Home/Work address
             </Link>
-            <Button title="Logout" onPress={handleLogout} />
-          </View>
-        </View>
-      )};
+        <Button title="Logout" onPress={handleLogout} />
+      </View>
+    </View>
+  );
+};
 
 export default GoogleNaps;
