@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#fff',
     },
     scrollView: {
         flexGrow: 1,
@@ -16,52 +16,91 @@ export const styles = StyleSheet.create({
         maxWidth: 400,
         backgroundColor: '#ffffff',
         padding: 20,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 3,
     },
     heading: {
-        fontSize: 24,
+        fontFamily: 'Gotham-Bold',
+        fontSize: 23,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 20,
         color: '#333',
     },
     input: {
+        fontFamily: 'Gotham-light',
         width: '100%',
         height: 45,
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        paddingHorizontal: 10,
+        borderColor: '#9fbf2a',
         marginBottom: 15,
         backgroundColor: '#fff',
-        fontSize: 16,
+        fontSize: 23,
         color: '#333',
+        textAlign: 'center',
     },
     error: {
         color: 'red',
         marginBottom: 10,
         textAlign: 'center',
+        backgroundColor: '#f8d7da',
+        padding: 15,
+        borderRadius: 5,
+        fontFamily: 'Gotham-bold',
+        fontSize: 18,
+
+        
     },
     button: {
-        backgroundColor: '#007BFF',
-        paddingVertical: 12,
-        borderRadius: 8,
+        backgroundColor: '#9fbf2a',
+        width: '100%',
+        paddingVertical: 15,
         alignItems: 'center',
         marginTop: 10,
     },
     buttonText: {
-        color: 'white',
-        fontSize: 16,
+        color: '#3e5916',
+        fontSize: 22,
         fontWeight: 'bold',
     },
     text: {
         marginTop: 15,
         textAlign: 'center',
         color: '#333',
+        fontFamily: 'Gotham-light',
+        fontSize: 23,
+
     },
+    imageContainer: {
+        marginBottom: 50,
+        alignItems: 'center',
+
+    },
+    image: {
+        width: 100,
+        resizeMode: 'contain',
+    },
+    app_name: {
+        fontSize: 33,
+        fontFamily: 'Gotham-bold',
+    },
+    welcome: {
+        fontFamily: 'Gotham-bold',
+        fontSize: 43,
+        marginTop: 50,
+    },
+    greenLine: {
+        width: '100%',
+        height: 5,
+        backgroundColor: '#9fbf2a',
+        marginBottom: 5,
+        marginTop: 20,
+    },
+
+    hyperlink: {
+        color: '#9fbf2a',
+        textAlign: 'center',
+        fontSize: 23,
+        fontFamily: 'Gotham-light',
+        marginTop: 10,
+    },
+
 });
