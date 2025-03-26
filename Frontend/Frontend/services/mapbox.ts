@@ -4,6 +4,8 @@ import axios from 'axios';
 export type Suggestion = {
     id: string;
     place_name: string;
+    latitude?: number;
+    longtitude?: number;
 }
 
 const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN || 'None';
@@ -21,6 +23,8 @@ export const fetchAddresses = async (text: string) => {
             return response.data.features.map((feature: any) => ({
                 id: feature.id,
                 place_name: feature.place_name,
+                latitude: feature.center[1],
+                longtitude: feature.center[0]
             }));
         } catch (error) {
             console.error("Error fetching addresses:", error, "token is:", MAPBOX_ACCESS_TOKEN);
