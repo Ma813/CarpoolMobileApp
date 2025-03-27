@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react-native'; // Using Lucide icons, you can replace with any other
+import { Navigation, X } from 'lucide-react-native'; // Using Lucide icons, you can replace with any other
 import { useFonts } from 'expo-font';
 import {
     View,

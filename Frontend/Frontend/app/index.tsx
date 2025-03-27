@@ -1,23 +1,22 @@
 import { styles } from "./styles";
 import { Link, useNavigation } from "expo-router";
 import { removeData, getData } from "@/services/localStorage";
-import { Text, View, TextInput, Button, TouchableOpacity } from "react-native";
+import { Text, View, Button, Image, KeyboardAvoidingView } from "react-native";
 import React, { useEffect, useState } from "react";
-import { UserWorkTime } from "@/types/UserWorkTime";
-import { getUserWorkTimes } from "@/services/workTimeApi";
-import LoginPage from "./pages/LoginPage";
+import { NavBar } from "./components/NavBar";
+import { useFonts } from 'expo-font';
 
 const GoogleNaps = () => {
-  const [username, setUsername] = useState(null);
-  const [day, setDay] = useState("");
-  const [workTime, setworkTime] = useState<UserWorkTime[] | null>(null);
-  const navigation = useNavigation<any>();
+  const [fontsLoaded] = useFonts({
+    'Gotham': require('@/assets/fonts/Gotham-Black.otf'),
+    'Gotham-Bold': require('@/assets/fonts/Gotham-Bold.otf'),
+    'Gotham-Italic': require('@/assets/fonts/Gotham-BlackItalic.otf'),
+    'Gotham-Light': require('@/assets/fonts/Gotham-Light.otf'),
+  });
 
-  const handleLogout = async () => {
-    await removeData("token");
-    await removeData("username");
-    fetchData();
-  };
+
+  const [username, setUsername] = useState(null);
+  const navigation = useNavigation<any>();
 
   const fetchData = async () => {
     const username = await getData("username");
@@ -29,10 +28,7 @@ const GoogleNaps = () => {
 
   useEffect(() => {
     fetchData();
-    getUserWorkTimes().then((workTime) => {
-      setworkTime(workTime);
-    });
-  }, []);
+  }, [username]); // Empty array ensures this runs once on mount
 
   if (!username) {
     return (
@@ -42,31 +38,16 @@ const GoogleNaps = () => {
     );
   }
 
+
   return (
-    <View style={styles.container}>
-      <Text>Logged in as: {username}</Text>
+    <KeyboardAvoidingView style={styles.container}>
+      <NavBar />
+      <Image source={require('@/assets/images/car.png')} style={styles.image} />
+      <Text style={styles.app_name}>COLLAB.RIDE</Text>
+      <Text style={[styles.welcomeText, { textAlign: "center", alignSelf: "center" }]}>Welcome, {username}!</Text>
 
-      <View style={styles.container}>
-        {/* Uncomment and use if needed */}
-        {/* <Link href="/pages/WeatherForecast" style={styles.button}>
-              Weather Forecast
-            </Link> */}
 
-        <Link href="/pages/UserWorkTime" style={styles.button}>
-          Work Times
-        </Link>
-        <Link href="/pages/CarSelect" style={styles.button}>
-          Add Car
-        </Link>
-        <Link href="/pages/Map" style={styles.button}>
-          View Map
-        </Link>
-            <Link href="/pages/Addresses" style={styles.button}>
-              Home/Work address
-            </Link>
-        <Button title="Logout" onPress={handleLogout} />
-      </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

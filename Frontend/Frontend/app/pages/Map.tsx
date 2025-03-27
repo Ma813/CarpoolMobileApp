@@ -3,6 +3,7 @@ import { StyleSheet, View, Alert, TextInput, FlatList, TouchableOpacity, Text, B
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import { fetchAddresses, Suggestion } from "@/services/mapbox";
+import { NavBar } from "../components/NavBar";
 import { getLastAddresses, postDestination } from "@/services/addressesApi";
 
 const Map = () => {
@@ -116,16 +117,17 @@ const Map = () => {
     setDestination({ latitude, longitude });
     console.log("Destination set to:", { latitude, longitude });
 
+
     const selected =
     {
       id: "",
       place_name: "Custom marker",
       longitude: longitude,
-      latitude: latitude
+      latitude: latitude,
     };
 
     setSelectedSuggestion(selected);
-    setQuery("Custom marker")
+    setQuery("Custom marker");
     setSuggestions([]);
   };
 
@@ -146,6 +148,9 @@ const Map = () => {
 
     return (
     <View style={styles.container}>
+      <View style={styles.navBarContainer}>
+        <NavBar />
+      </View>
       <View style={styles.searchContainer}>
         <TextInput
           placeholder="Įveskite adresą..."
@@ -160,10 +165,13 @@ const Map = () => {
           }}
           onFocus={() => {
             if (!query) setSuggestions(recentAddresses);
+
           }}
           style={styles.input}
         />
-        <Button title="GO" onPress={handleGoPress} />
+        <TouchableOpacity style={styles.button} onPress={handleGoPress}>
+          <Text style={styles.buttonText}>GO</Text>
+        </TouchableOpacity>
       </View>
       <View style={{ backgroundColor: "white", maxHeight: 200 }}>
         <FlatList
@@ -204,7 +212,6 @@ const Map = () => {
         onLongPress={handleMapPress}
         showsUserLocation={true}
       >
-
         {/* Destination Marker */}
         {destination && <Marker coordinate={destination} title="Destination" />}
 
@@ -225,22 +232,34 @@ export default Map;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, // Full screen container
+    paddingTop: 50, // Add some space at the top
+    backgroundColor: "#fff",
+  },
+  navBarContainer: {
+    position: "absolute", // Positioning the NavBar at the bottom
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1, // Ensure NavBar stays on top of other elements
   },
   map: {
     flex: 1,
     width: "100%",
     height: "100%",
+    marginBottom: 78, // Adjust this margin so map does not overlap with navbar
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 10, // Add some space after NavBar
     marginBottom: 10,
+    paddingHorizontal: 10,
   },
   input: {
     flex: 1, // Makes input take available space
     height: 40,
-    borderColor: "gray",
+    borderColor: "#9fbf2a",
     borderWidth: 1,
     borderRadius: 5,
     paddingLeft: 10,
@@ -250,5 +269,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
+  },
+  button: {
+    backgroundColor: "#9fbf2a",
+    padding: 13,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "#fff",
   },
 });

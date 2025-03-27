@@ -8,13 +8,15 @@ export const styles = StyleSheet.create({
 
     error: {
         color: 'red',
-        marginBottom: 10,
+        marginTop: 20,
         textAlign: 'center',
         backgroundColor: '#f8d7da',
         padding: 15,
-        borderRadius: 5,
+        borderRadius: 25,
         fontFamily: 'Gotham-bold',
-        fontSize: 18,  
+        fontSize: 18,
+        width: '80%',
+        alignSelf: 'center',
     },
 
     form: {
@@ -22,6 +24,7 @@ export const styles = StyleSheet.create({
         maxWidth: 400,
         backgroundColor: '#ffffff',
         padding: 20,
+        marginTop: 10,
     },
     heading: {
         fontFamily: 'Gotham-Bold',
@@ -33,15 +36,9 @@ export const styles = StyleSheet.create({
     },
     input: {
         fontFamily: 'Gotham-light',
-        width: '100%',
-        height: 45,
-        borderWidth: 1,
-        borderColor: '#9fbf2a',
-        marginBottom: 15,
-        backgroundColor: '#fff',
-        fontSize: 23,
-        color: '#333',
-        textAlign: 'center',
+        flex: 1,
+        fontSize: 16,
+        color: "#3D5C54",
     },
     name: {
         fontFamily: 'Gotham-light',
@@ -64,10 +61,40 @@ export const styles = StyleSheet.create({
     },
     bigX: {
         position: 'absolute',
-        top: 10,
+        top: 60,
         right: 10,
         padding: 10,
         zIndex: 10,
+    },
+    inputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: "#3D5C54",
+        borderRadius: 25,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        width: "80%",
+        alignSelf: "center",
+        backgroundColor: "white",
+        marginBottom: 15,
+    },
+    icon: {
+        marginRight: 10,
+    },
+    button: {
+        backgroundColor: '#9fbf2a',
+        padding: 15,
+        borderRadius: 25,
+        marginTop: 20,
+        width: '80%',
+        alignSelf: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontSize: 20,
+        fontFamily: 'Gotham',
     },
 
 });

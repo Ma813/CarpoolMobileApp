@@ -15,13 +15,13 @@ const UserWorkTime: React.FC = () => {
       working: boolean;
     };
   }>({
-    Monday: { start_time: "", end_time: "", changed: false, working: false },
-    Tuesday: { start_time: "", end_time: "", changed: false, working: false },
-    Wednesday: { start_time: "", end_time: "", changed: false, working: false },
-    Thursday: { start_time: "", end_time: "", changed: false, working: false },
-    Friday: { start_time: "", end_time: "", changed: false, working: false },
-    Saturday: { start_time: "", end_time: "", changed: false, working: false },
-    Sunday: { start_time: "", end_time: "", changed: false, working: false },
+    Monday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Tuesday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Wednesday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Thursday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Friday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Saturday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Sunday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
   });
 
   const fetchWorkTimes = async () => {
@@ -72,14 +72,29 @@ const UserWorkTime: React.FC = () => {
   };
 
   const handleWorkingToggle = (day: string, value: boolean) => {
-    setWorkTimes((prevWorkTimes) => ({
-      ...prevWorkTimes,
-      [day]: {
-        ...prevWorkTimes[day],
-        working: value,
-        changed: true,
-      },
-    }));
+    if (!value) {
+      // If the switch is turned off, reset start and end times
+      setWorkTimes((prevWorkTimes) => ({
+        ...prevWorkTimes,
+        [day]: {
+          ...prevWorkTimes[day],
+          start_time: "00:00:00",
+          end_time: "00:00:00",
+          working: false,
+          changed: true,
+        },
+      }));
+    }
+    else {
+      setWorkTimes((prevWorkTimes) => ({
+        ...prevWorkTimes,
+        [day]: {
+          ...prevWorkTimes[day],
+          working: value,
+          changed: true,
+        },
+      }));
+    }
   };
 
   const onChange = (
@@ -89,6 +104,7 @@ const UserWorkTime: React.FC = () => {
     selectedDate?: Date
   ) => {
     if (selectedDate) {
+      console.log("Selected date:", selectedDate); // Debugging: Log the selected date
       const hours = selectedDate.getHours().toString().padStart(2, "0");
       const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
       const timeString = `${hours}:${minutes}:00`; // Store time in HH:MM:SS format
@@ -131,7 +147,8 @@ const UserWorkTime: React.FC = () => {
         }
       );
       alert("Work times saved successfully!");
-      navigation.navigate("index");
+      console.log(workTimes);
+      // navigation.navigate("index");
     } catch (error) {
       console.error("Error:", error);
       alert("Failed to save work times.");
@@ -144,25 +161,26 @@ const UserWorkTime: React.FC = () => {
         Enter Your Work Time
       </Text>
       {Object.keys(workTimes).map((day) => (
-        <View key={day} style={styles.dayContainer}>
-          <Text style={styles.dayText}>{day}</Text>
+        <View key={day} style={WorkTimeStyles.dayContainer}>
+          <Text style={WorkTimeStyles.dayText}>{day.toLocaleUpperCase()}</Text>
           <Switch
             value={workTimes[day].working}
             onValueChange={(value) => handleWorkingToggle(day, value)}
           />
-          <View style={styles.timePickersContainer}>
+          <View style={WorkTimeStyles.timePickersContainer}>
             {workTimes[day].working && (
               <>
                 <DateTimePicker
                   value={
-                    workTimes[day].start_time
+                    workTimes[day].start_time && workTimes[day].start_time !== ""
                       ? new Date(
-                          1970,
-                          0,
-                          1,
-                          ...workTimes[day].start_time.split(":").map(Number)
-                        )
-                      : new Date()
+                        1970,
+                        0,
+                        1,
+                        ...workTimes[day].start_time.split(":").map(Number)
+
+                      )
+                      : new Date(1970, 0, 1, 0, 0) // Default to 00:00 UTC
                   }
                   mode="time"
                   display="compact"
@@ -175,12 +193,14 @@ const UserWorkTime: React.FC = () => {
                   value={
                     workTimes[day].end_time
                       ? new Date(
-                          1970,
-                          0,
-                          1,
-                          ...workTimes[day].end_time.split(":").map(Number)
-                        )
-                      : new Date()
+
+                        1970,
+                        0,
+                        1,
+                        ...workTimes[day].end_time.split(":").map(Number)
+
+                      )
+                      : new Date(1970, 0, 1, 0, 0) // Default to 00:00 UTC
                   }
                   mode="time"
                   display="default"
@@ -199,7 +219,7 @@ const UserWorkTime: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const WorkTimeStyles = StyleSheet.create({
   dayContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -210,6 +230,10 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     marginRight: 25,
+    backgroundColor: "#9fbf2a",
+    padding: 10,
+    fontFamily: "Gotham-Bold",
+    color: "#3e5916",
   },
   timePickersContainer: {
     flexDirection: "row",

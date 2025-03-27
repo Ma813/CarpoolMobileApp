@@ -6,10 +6,13 @@ import { styles } from './RegisterStyles';
 import { useFonts } from 'expo-font';
 import { ScrollView } from 'react-native';
 import { X } from 'lucide-react-native';
+import Icon from "react-native-vector-icons/FontAwesome";
 
 const RegisterPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const navigation = useNavigation<any>();
 
@@ -21,7 +24,7 @@ const RegisterPage = () => {
     });
 
     // Animated values
-    const animatedHeight = useRef(new Animated.Value(150)).current; // Initial height
+    const animatedHeight = useRef(new Animated.Value(200)).current; // Initial height
     const animatedOpacity = useRef(new Animated.Value(1)).current;  // Initial opacity
 
     useEffect(() => {
@@ -45,7 +48,7 @@ const RegisterPage = () => {
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
             Animated.parallel([
                 Animated.timing(animatedHeight, {
-                    toValue: 150, // Restore height
+                    toValue: 200, // Restore height
                     duration: 300,
                     easing: Easing.ease,
                     useNativeDriver: false,
@@ -66,7 +69,13 @@ const RegisterPage = () => {
     }, []);
 
     const handleRegister = async () => {
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
         try {
+            setError('');
             await signup({ username, password }).then(() => {
                 console.log('Registered');
                 navigation.navigate('pages/LoginPage');
@@ -89,35 +98,64 @@ const RegisterPage = () => {
 
             <ScrollView >
                 <View style={styles.top}>
-                    <TouchableOpacity style={styles.bigX}>
+                    <TouchableOpacity
+                        style={styles.bigX}
+                        onPress={() => navigation.navigate('pages/LoginPage')}
+                    >
                         <X size={30} color="white" />
                     </TouchableOpacity>
-                    <Text style={[styles.name]}>Let's</Text>
-                    <Text style={[styles.name, styles.bold]}>Create</Text>
-                    <Text style={[styles.name, styles.bold]}>Your</Text>
-                    <Text style={[styles.name, styles.bold]}>Account</Text>
+                    <Animated.View style={{ height: animatedHeight, opacity: animatedOpacity }}>
+                        <Text style={[styles.name]}>Let's</Text>
+                        <Text style={[styles.name, styles.bold]}>Create</Text>
+                        <Text style={[styles.name, styles.bold]}>Your</Text>
+                        <Text style={[styles.name, styles.bold]}>Account</Text>
+                    </Animated.View>
                 </View>
 
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <View style={styles.form}>
 
-                    <TextInput
-                        style={styles.input}
-                        value={username}
-                        onChangeText={setUsername}
-                        placeholder="Enter username"
-                        placeholderTextColor="#888"
-                        autoCapitalize="none"
-                    />
-                    <TextInput
-                        style={styles.input}
-                        value={password}
-                        onChangeText={setPassword}
-                        placeholder="Enter password"
-                        placeholderTextColor="#888"
-                        secureTextEntry
-                    />
-                    <Button title="Register" onPress={handleRegister} />
+                    <View style={styles.inputContainer}>
+                        <Icon name="user" size={18} color="#9EABA7" style={styles.icon} />
+                        <TextInput
+                            placeholder="Username"
+                            placeholderTextColor="#9EABA7"
+                            style={styles.input}
+                            value={username}
+                            onChangeText={setUsername}
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Icon name="envelope" size={18} color="#9EABA7" style={styles.icon} />
+                        <TextInput
+                            placeholder="Email"
+                            placeholderTextColor="#9EABA7"
+                            style={styles.input}
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Icon name="lock" size={18} color="#9EABA7" style={styles.icon} />
+                        <TextInput
+                            style={styles.input}
+                            value={password}
+                            onChangeText={setPassword}
+                            placeholder="Enter password"
+                            placeholderTextColor="#888"
+                            secureTextEntry
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Icon name="lock" size={18} color="#9EABA7" style={styles.icon} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Retype password"
+                            placeholderTextColor="#888"
+                            secureTextEntry
+                        />
+                    </View>
+                    <TouchableOpacity style={styles.button} onPress={handleRegister}>
+                        <Text style={styles.buttonText}>Sign up</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
