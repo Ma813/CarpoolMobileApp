@@ -3,7 +3,7 @@ import { StyleSheet, View, Alert, TextInput, FlatList, TouchableOpacity, Text, B
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import { fetchAddresses, Suggestion } from "@/services/mapbox";
-import { getAddresses } from "@/services/addressesApi";
+import { getLastAddresses, postDestination } from "@/services/addressesApi";
 
 const Map = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
@@ -19,6 +19,7 @@ const Map = () => {
   const [query, setQuery] = useState<string>("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const [recentAddresses, setRecentAddresses] = useState<Suggestion[]>([]); // State to store recent addresses
 
   // Fetch the current location of the device
   const fetchCurrentLocation = () => {
@@ -59,6 +60,27 @@ const Map = () => {
     fetchRoute();
   }, [destination]); // Fetch the route when the destination changes
 
+  useEffect(() => {
+    getLastAddresses().then((data) => {
+        if (!data || !Array.isArray(data)) {
+            console.error("Blogas duomenų formatas iš API", data);
+            return;
+        }
+
+        const suggestions = data.map((d: any) => ({
+            id: d.id?.toString() ?? Math.random().toString(),
+            place_name: d.place_name ?? "Unknown place",
+            latitude: d.latitude ?? 0,
+            longitude: d.longitude ?? 0 // čia konvertuoju į teisingą lauką
+        }));
+
+        setRecentAddresses(suggestions);
+        console.log("Gauti recentAddresses:", suggestions);
+    }).catch(err => {
+        console.error("Klaida gaunant paskutinius adresus:", err);
+    });
+}, []);
+
   const fetchRoute = async () => {
     if (!destination) return; // Skip if no destination is set
     console.log("Fetching route to destination:", destination);
@@ -94,7 +116,6 @@ const Map = () => {
     setDestination({ latitude, longitude });
     console.log("Destination set to:", { latitude, longitude });
 
-
     const selected =
     {
       id: "",
@@ -106,17 +127,15 @@ const Map = () => {
     setSelectedSuggestion(selected);
     setQuery("Custom marker")
     setSuggestions([]);
-
-
-
   };
 
   const handleGoPress = () => {
     console.log("Go to address:", selectedSuggestion?.place_name);
     if (selectedSuggestion) {
       try {
-        setDestination({ latitude: selectedSuggestion.latitude ?? 56, longitude: selectedSuggestion.longtitude ?? 24 });
-        // postAddresses({ destination_address: selectedAddress });
+        setDestination({ latitude: selectedSuggestion.latitude ?? 56, longitude: selectedSuggestion.longitude ?? 24 });
+        console.log(selectedSuggestion);
+         postDestination(selectedSuggestion);
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -125,18 +144,23 @@ const Map = () => {
     }
   };
 
-  return (
+    return (
     <View style={styles.container}>
-
       <View style={styles.searchContainer}>
         <TextInput
-          placeholder="Search address..."
+          placeholder="Įveskite adresą..."
           value={query}
           onChangeText={(text) => {
             setQuery(text);
-            fetchAddresses(text).then(setSuggestions);
+            if (text.length > 0) {
+              fetchAddresses(text).then(setSuggestions);
+            } else {
+              setSuggestions(recentAddresses); // Jei tekstas išvalytas, rodyti paskutinius adresus
+            }
           }}
-          onFocus={() => setQuery("")} // Clear the text input when clicked
+          onFocus={() => {
+            if (!query) setSuggestions(recentAddresses);
+          }}
           style={styles.input}
         />
         <Button title="GO" onPress={handleGoPress} />
@@ -159,8 +183,6 @@ const Map = () => {
           )}
         />
       </View>
-
-
       <MapView
         style={styles.map}
         region={
@@ -199,7 +221,6 @@ const Map = () => {
     </View>
   );
 };
-
 export default Map;
 
 const styles = StyleSheet.create({
