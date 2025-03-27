@@ -77,11 +77,20 @@ namespace Backend.Controllers
             var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
             if (userId == null) return Unauthorized();
 
-            var lastDestinations = await _context.Destinations
+            // Pirmiausia paimam daugiau nei reikia
+            var destinations = await _context.Destinations
                 .Where(d => d.user_id == int.Parse(userId))
                 .OrderByDescending(d => d.date)
-                .Take(5)
+                .Take(50) // apsidraudimui paimam daugiau nei 5
                 .ToListAsync();
+
+            // Po to jau grupuojam in-memory, nes jeigu viska darau taip, tada nelabai draugauja su EF Core SQL generatoriumi (ypač MySQL).
+            var lastDestinations = destinations
+                .GroupBy(d => d.place_name)
+                .Select(g => g.First())
+                .OrderByDescending(d => d.date)
+                .Take(5)
+                .ToList();
 
             return Ok(lastDestinations);
         }
