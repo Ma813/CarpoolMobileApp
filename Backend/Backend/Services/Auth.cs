@@ -24,7 +24,7 @@ namespace Backend.Services
                 issuer: configuration["Jwt:Issuer"],
                 audience: configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(60),
+                expires: DateTime.Now.AddYears(100), // I have trust issues, removing this line should work too
                 signingCredentials: creds
             );
 

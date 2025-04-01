@@ -26,6 +26,7 @@ api.interceptors.response.use(
     async (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
+            console.log('Unauthorized, redirecting to login page');
             if (navigationRef.isReady()) {
                 const currentPage = navigationRef.getCurrentRoute()?.name;
                 if (currentPage !== 'pages/LoginPage') {

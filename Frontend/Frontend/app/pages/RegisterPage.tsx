@@ -148,6 +148,9 @@ const RegisterPage = () => {
                         <Icon name="lock" size={18} color="#9EABA7" style={styles.icon} />
                         <TextInput
                             style={styles.input}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+
                             placeholder="Retype password"
                             placeholderTextColor="#888"
                             secureTextEntry

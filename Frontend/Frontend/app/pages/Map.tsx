@@ -63,24 +63,24 @@ const Map = () => {
 
   useEffect(() => {
     getLastAddresses().then((data) => {
-        if (!data || !Array.isArray(data)) {
-            console.error("Blogas duomenų formatas iš API", data);
-            return;
-        }
+      if (!data || !Array.isArray(data)) {
+        console.error("Blogas duomenų formatas iš API", data);
+        return;
+      }
 
-        const suggestions = data.map((d: any) => ({
-            id: d.id?.toString() ?? Math.random().toString(),
-            place_name: d.place_name ?? "Unknown place",
-            latitude: d.latitude ?? 0,
-            longitude: d.longitude ?? 0 // čia konvertuoju į teisingą lauką
-        }));
+      const suggestions = data.map((d: any) => ({
+        id: d.id?.toString() ?? Math.random().toString(),
+        place_name: d.place_name ?? "Unknown place",
+        latitude: d.latitude ?? 0,
+        longitude: d.longitude ?? 0 // čia konvertuoju į teisingą lauką
+      }));
 
-        setRecentAddresses(suggestions);
-        console.log("Gauti recentAddresses:", suggestions);
+      setRecentAddresses(suggestions);
+      console.log("Gauti recentAddresses:", suggestions);
     }).catch(err => {
-        console.error("Klaida gaunant paskutinius adresus:", err);
+      console.error("Klaida gaunant paskutinius adresus:", err);
     });
-}, []);
+  }, []);
 
   const fetchRoute = async () => {
     if (!destination) return; // Skip if no destination is set
@@ -129,6 +129,7 @@ const Map = () => {
     setSelectedSuggestion(selected);
     setQuery("Custom marker");
     setSuggestions([]);
+    postDestination(selected); // Save the custom marker as a destination
   };
 
   const handleGoPress = () => {
@@ -137,7 +138,7 @@ const Map = () => {
       try {
         setDestination({ latitude: selectedSuggestion.latitude ?? 56, longitude: selectedSuggestion.longitude ?? 24 });
         console.log(selectedSuggestion);
-         postDestination(selectedSuggestion);
+        postDestination(selectedSuggestion);
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -146,21 +147,22 @@ const Map = () => {
     }
   };
 
-    return (
+  return (
     <View style={styles.container}>
       <View style={styles.navBarContainer}>
         <NavBar />
       </View>
       <View style={styles.searchContainer}>
         <TextInput
-          placeholder="Įveskite adresą..."
+          placeholder="Search..."
+          placeholderTextColor="#999"
           value={query}
           onChangeText={(text) => {
             setQuery(text);
             if (text.length > 0) {
               fetchAddresses(text).then(setSuggestions);
             } else {
-              setSuggestions(recentAddresses); // Jei tekstas išvalytas, rodyti paskutinius adresus
+              setSuggestions(recentAddresses);
             }
           }}
           onFocus={() => {

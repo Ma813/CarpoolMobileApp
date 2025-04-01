@@ -37,12 +37,27 @@ namespace Backend.Controllers
             var user = await _context.Users.FindAsync(int.Parse(userId));
             if (user == null) return NotFound("User not found");
 
+            var existingCar = await _context.Cars.FirstOrDefaultAsync(c => c.user_id == user.Id);
+            if (existingCar != null)
+            {
+                existingCar.brand = carDto.brand;
+                existingCar.model = carDto.model;
+                existingCar.license_plate = carDto.licensePlate;
+                existingCar.fuel_efficiency = carDto.fuelEfficiency;
+                existingCar.fuel_type = carDto.fuelType;
+                _context.Cars.Update(existingCar);
+                await _context.SaveChangesAsync();
+                return Ok("Car updated successfully.");
+            }
+
             var car = new Car
             {
                 brand = carDto.brand,
                 model = carDto.model,
                 license_plate = carDto.licensePlate,
-                user_id = user.Id
+                user_id = user.Id,
+                fuel_efficiency = carDto.fuelEfficiency,
+                fuel_type = carDto.fuelType
             };
 
             _context.Cars.Add(car);
@@ -52,7 +67,7 @@ namespace Backend.Controllers
         }
 
         [Authorize]
-        [HttpGet("userCars")]
+        [HttpGet("getCar")]
         public async Task<ActionResult<IEnumerable<Car>>> GetUserCars()
         {
             var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -61,8 +76,12 @@ namespace Backend.Controllers
                 return Unauthorized();
             }
 
-            var userCars = await _context.Cars.Where(c => c.user_id == int.Parse(userId)).ToListAsync();
-            return Ok(userCars);
+            var userCar = await _context.Cars.FirstOrDefaultAsync(c => c.user_id == int.Parse(userId));
+            if (userCar == null)
+            {
+                return NotFound("No car found for the user.");
+            }
+            return Ok(userCar);
         }
     }
 }

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, StyleSheet, Switch } from "react-native";
+import { View, Text, Button, StyleSheet, Switch, Touchable, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "@/services/api";
 import { getUserWorkTimes } from "@/services/workTimeApi";
+import { styles } from "./ProfileStyles";
 
 const UserWorkTime: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -15,13 +16,13 @@ const UserWorkTime: React.FC = () => {
       working: boolean;
     };
   }>({
-    Monday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Tuesday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Wednesday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Thursday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Friday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Saturday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
-    Sunday: { start_time: "00:00:00", end_time: "00:00:00", changed: false, working: false },
+    Monday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Tuesday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Wednesday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Thursday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Friday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Saturday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
+    Sunday: { start_time: "09:00:00", end_time: "17:00:00", changed: false, working: false },
   });
 
   const fetchWorkTimes = async () => {
@@ -78,8 +79,6 @@ const UserWorkTime: React.FC = () => {
         ...prevWorkTimes,
         [day]: {
           ...prevWorkTimes[day],
-          start_time: "00:00:00",
-          end_time: "00:00:00",
           working: false,
           changed: true,
         },
@@ -105,8 +104,8 @@ const UserWorkTime: React.FC = () => {
   ) => {
     if (selectedDate) {
       console.log("Selected date:", selectedDate); // Debugging: Log the selected date
-      const hours = selectedDate.getHours().toString().padStart(2, "0");
-      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+      const hours = selectedDate.getUTCHours().toString().padStart(2, "0");
+      const minutes = selectedDate.getUTCMinutes().toString().padStart(2, "0");
       const timeString = `${hours}:${minutes}:00`; // Store time in HH:MM:SS format
       handleTimeChange(day, timeString, isStart);
     }
@@ -171,40 +170,46 @@ const UserWorkTime: React.FC = () => {
             {workTimes[day].working && (
               <>
                 <DateTimePicker
+                  style={ WorkTimeStyles.DateTimePicker }
                   value={
                     workTimes[day].start_time && workTimes[day].start_time !== ""
                       ? new Date(
-                        1970,
-                        0,
-                        1,
-                        ...workTimes[day].start_time.split(":").map(Number)
+                        Date.UTC(
+                          1970,
+                          0,
+                          1,
+                          ...workTimes[day].start_time.split(":").map(Number)
+                        )
 
                       )
-                      : new Date(1970, 0, 1, 0, 0) // Default to 00:00 UTC
+                      : new Date(Date.UTC(1970, 0, 1, 0, 0, 0))
                   }
                   mode="time"
                   display="compact"
                   minuteInterval={15}
+                  timeZoneName="UTC"
                   onChange={(event, selectedDate) =>
                     onChange(day, true, event, selectedDate)
                   }
                 />
                 <DateTimePicker
+                  style={ WorkTimeStyles.DateTimePicker }
                   value={
                     workTimes[day].end_time
                       ? new Date(
-
-                        1970,
-                        0,
-                        1,
-                        ...workTimes[day].end_time.split(":").map(Number)
-
+                        Date.UTC(
+                          1970,
+                          0,
+                          1,
+                          ...workTimes[day].end_time.split(":").map(Number)
+                        )
                       )
-                      : new Date(1970, 0, 1, 0, 0) // Default to 00:00 UTC
+                      : new Date(Date.UTC(1970, 0, 1, 0, 0, 0))
                   }
                   mode="time"
                   display="default"
                   minuteInterval={15}
+                  timeZoneName="UTC"
                   onChange={(event, selectedDate) =>
                     onChange(day, false, event, selectedDate)
                   }
@@ -214,7 +219,12 @@ const UserWorkTime: React.FC = () => {
           </View>
         </View>
       ))}
-      <Button title="Save" onPress={saveWorkTimes} />
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => { saveWorkTimes() }}>
+        <Text style={styles.buttonText}>Save Work Times</Text>
+      </TouchableOpacity>
+
     </View>
   );
 };
@@ -240,6 +250,14 @@ const WorkTimeStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-end",
     flex: 2,
+  },
+  DateTimePicker: {
+    flex: 1,
+    marginHorizontal: 10,
+    // backgroundColor: "#9fbf2a",
+    // borderRadius: 5,
+    // borderWidth: 1,
+    // borderColor: "#ccc",
   },
 });
 

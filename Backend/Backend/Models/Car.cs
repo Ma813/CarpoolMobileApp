@@ -10,5 +10,7 @@ namespace Backend.Models
         public string? model { get; set; }
         public string? license_plate { get; set; }
         public int user_id { get; set; }
+        public double? fuel_efficiency { get; set; }
+        public required string fuel_type { get; set; }
     }
 }

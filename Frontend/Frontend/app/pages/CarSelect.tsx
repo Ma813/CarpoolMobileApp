@@ -1,13 +1,15 @@
 import api from "@/services/api";
 import { useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import { styles } from "./ProfileStyles";
+import { X } from "lucide-react-native";
+import { Car, getCar, postCar } from "@/services/carApi";
 
 const CarSelectPage: React.FC = () => {
   const navigation = useNavigation<any>();
   const [licensePlate, setLicensePlate] = useState("");
-  const [brand, setbrand] = useState<string | null>(null);
+  const [brand, setBrand] = useState<string | null>(null);
   const [allbrands, setAllBrands] = useState<
     { label: string; value: string }[]
   >([]);
@@ -15,13 +17,49 @@ const CarSelectPage: React.FC = () => {
     { label: string; value: string }[]
   >([]);
   const [model, setModel] = useState<string | null>(null);
+  const [showBrands, setShowBrands] = useState(false);
+  const [showModels, setShowModels] = useState(false);
+  const [brandSearch, setBrandSearch] = useState("");
+  const [modelSearch, setModelSearch] = useState("");
+  const [fuelType, setFuelType] = useState<string | null>(null);
+  const [showFuelDropdown, setShowFuelDropdown] = useState(false);
+  const [fuelEfficiency, setFuelEfficiency] = useState<number>(0);
 
-  const [openbrandDropdown, setOpenbrandDropdown] = useState(false);
-  const [openModelDropdown, setOpenModelDropdown] = useState(false);
+
+  const fuelTypes = [
+    { label: "Petrol", value: "Petrol" },
+    { label: "Diesel", value: "Diesel" },
+    { label: "Electric", value: "Electric" },
+    { label: "Hybrid", value: "Hybrid" },
+    { label: "Other", value: "Other" },
+  ];
 
   useEffect(() => {
     fetchCarBrands();
+    fetchExistingCar();
   }, []);
+
+  const fetchExistingCar = async () => {
+    try {
+      const response = await getCar();
+      if (response.data) {
+        const car = response.data;
+        console.log("Existing car data:", car);
+        setBrand(car.brand);
+        setModel(car.model);
+        setLicensePlate(car.license_plate);
+        setFuelType(car.fuel_type);
+        setBrandSearch(car.brand);
+        setModelSearch(car.model);
+        setShowBrands(false);
+        setShowModels(false);
+        setFuelEfficiency(car.fuel_efficiency);
+      }
+    } catch (error) {
+      console.error("Error fetching existing car:", error);
+      alert("Failed to fetch existing car.");
+    }
+  };
 
   const fetchCarBrands = async () => {
     try {
@@ -58,102 +96,299 @@ const CarSelectPage: React.FC = () => {
   };
 
   const submitCar = async () => {
-    if (!brand || !model || !licensePlate) {
+    if (!brand || !model || !licensePlate || !fuelType || !fuelEfficiency) {
       alert("Please fill in all fields.");
       return;
     }
 
-    try {
-      const carData = {
-        brand,
-        model,
-        licensePlate,
-      };
-      const response = await api.post("/cars/addCar", carData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      alert("Car data saved successfully!");
-      navigation.navigate("index");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to save car data.");
-    }
+    const car = {
+      brand,
+      model,
+      licensePlate,
+      fuelType,
+      fuelEfficiency,
+    };
+
+    postCar(car)
+      .then((response) => {
+        console.log("Car saved successfully:", response);
+        alert("Car saved successfully.");
+      }
+      )
+      .catch((error) => {
+        console.error("Error saving car:", error);
+        alert("Failed to save car.");
+      }
+      );
+
   };
 
   return (
-    <View style={styles.container}>
-      <Text>Brand:</Text>
-      <DropDownPicker
-        open={openbrandDropdown}
-        value={brand}
-        items={allbrands}
-        setOpen={setOpenbrandDropdown}
-        setValue={(callback) => {
-          const newbrand =
-            typeof callback === "function" ? callback(brand) : callback;
-          setbrand(newbrand);
-          setModel(null); // Reset model when brand changes
-          fetchCarModels(newbrand);
-        }}
-        searchable={true}
-        style={styles.dropdown}
-        dropDownContainerStyle={styles.dropdownList}
-        placeholder="Select a car brand"
-      />
+    <View style={carStyles.container}>
+      <View style={carStyles.inputContainer}>
+        <TextInput
+          style={carStyles.input}
+          value={brandSearch}
+          onChangeText={(text) => {
+            setBrandSearch(text);
+            if (text.length > 0) {
+              setShowBrands(true);
+            } else {
+              setShowBrands(false);
+            }
+          }}
+          placeholder="Search brands..."
+          placeholderTextColor={"#000"}
+        />
+        {brandSearch.length > 0 && (
+
+          <TouchableOpacity
+            style={carStyles.xContainer}
+            onPress={() => {
+              setBrandSearch("");
+              setBrand(null); // Reset brand when clearing search
+              setShowBrands(false);
+            }}
+          >
+            <X size={18} color="gray" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {showBrands && (
+        <FlatList style={{ marginBottom: 10 }}
+          data={allbrands.filter((brand) =>
+            brand.label.toLowerCase().includes(brandSearch.toLowerCase())
+          )}
+          keyExtractor={(item) => item.value}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => {
+                setBrandSearch(item.label);
+                setBrand(item.value);
+                setModel(null); // Reset model when brand changes
+                setModelSearch(""); // Reset model search input
+                fetchCarModels(item.value);
+                setShowBrands(false); // Hide after selection if not focused
+                setShowModels(false); // Hide models if brand is selected
+              }}
+              style={[carStyles.listItem]}
+            >
+              <Text>{item.label}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Show Model Dropdown only when brand is selected */}
-      {brand ? (
+      {brand && (
         <>
-          <Text>Model:</Text>
-          <DropDownPicker
-            open={openModelDropdown}
-            value={model}
-            items={allModels}
-            setOpen={setOpenModelDropdown}
-            setValue={setModel}
-            searchable={true}
-            placeholder="Select a car model"
-            style={styles.dropdown}
-            dropDownContainerStyle={styles.dropdownList}
-          />
+          <View style={carStyles.inputContainer}>
+            <TextInput
+              style={carStyles.input}
+              value={modelSearch}
+              onChangeText={setModelSearch}
+              placeholder="Search models..."
+              placeholderTextColor={"#000"}
+              onBlur={() => setShowBrands(false)}
+              onChange={() => {
+                if (modelSearch.length > 0) {
+                  setShowModels(true);
+                } else {
+                  setShowModels(false);
+                }
+              }}
+            />
+            {modelSearch.length > 0 && (
+              <TouchableOpacity
+                style={carStyles.xContainer}
+                onPress={() => {
+                  setModelSearch("");
+                  setModel(null); // Reset brand when clearing search
+                  setShowModels(false);
+                }}
+              >
+                <X size={18} color="gray" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {showModels && (
+            <FlatList style={{ marginBottom: 10 }}
+              data={allModels.filter((model) =>
+                model.label.toLowerCase().includes(modelSearch.toLowerCase())
+              )}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setModel(item.value);
+                    setModelSearch(item.label); // Set the model search input to the selected model
+                    setShowModels(false); // Hide after selection
+                  }}
+                  style={[
+                    carStyles.listItem,
+                    model === item.value && carStyles.selectedItem,
+                  ]}
+                >
+                  <Text>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </>
+      )}
+
+      <View style={carStyles.inputContainer}>
+        <TextInput
+          style={carStyles.input}
+          value={licensePlate}
+          onChangeText={(input) => setLicensePlate(input.toUpperCase())}
+          placeholder="Enter license plate"
+          placeholderTextColor={"#000"}
+          autoCapitalize="characters"
+        />
+      </View>
+
+      <TouchableOpacity
+        onPress={() => setShowFuelDropdown(!showFuelDropdown)}
+        style={[!fuelType ? carStyles.dropdownToggle : carStyles.dropdownSelected, showFuelDropdown && carStyles.dropdownActive]}
+      >
+        <Text style={carStyles.dropdownText}>
+          {fuelType ? `Fuel Type: ${fuelType}` : "Select Fuel Type"}
+        </Text>
+      </TouchableOpacity>
+      {showFuelDropdown && (
+        <FlatList style={{ marginBottom: 10 }}
+          data={fuelTypes}
+          keyExtractor={(item) => item.value}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => {
+                setFuelType(item.value);
+                setShowFuelDropdown(false); // Hide after selection
+              }}
+              style={[
+                carStyles.dropdownItem,
+                fuelType === item.value && carStyles.selectedItem,
+              ]}
+            >
+              <Text style={carStyles.dropdownItemText}>{item.label}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+
+      {fuelType === "Petrol" || fuelType === "Diesel" ? (
+        <View style={{ flexDirection: "row", marginBottom: 10, alignItems: "center" }}>
+          <View style={{ flex: 3 }}>
+            <Text style={carStyles.inputLabel}>Fuel efficiency (liters / 100km):</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={carStyles.input}
+              keyboardType="numeric"
+              onChangeText={(text) => {
+                const formattedText = text.replace(',', '.');
+                setFuelEfficiency(parseFloat(formattedText));
+              }}
+            />
+          </View>
+        </View>
       ) : null}
 
-      <Text>License plate:</Text>
-      <TextInput
-        style={styles.input}
-        value={licensePlate}
-        onChangeText={(input) => setLicensePlate(input.toUpperCase())}
-        placeholder="Enter license plate"
-        placeholderTextColor={"#000"}
-        autoCapitalize="characters"
-      />
-      <Button title="Save" onPress={submitCar} />
+      <TouchableOpacity style={styles.button} onPress={submitCar}>
+        <Text style={styles.buttonText}>Save Car</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 export default CarSelectPage;
 
-const styles = StyleSheet.create({
+const carStyles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
   },
+  inputContainer: {
+    position: "relative",
+    marginBottom: 10,
+  },
+  listItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    borderRadius: 5,
+    backgroundColor: "#fff",
+    marginVertical: 4,
+  },
+  selectedItem: {
+    backgroundColor: "#e0e0e0",
+  },
   input: {
-    height: 40,
-    borderColor: "gray",
+    height: 45,
+    borderColor: "#ced4da",
     borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#fff",
   },
-  dropdown: {
-    marginBottom: 16,
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  dropdownList: {
-    zIndex: 1000,
-    elevation: 5,
+  dropdownToggle: {
+    backgroundColor: "grey",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  dropdownSelected: {
+    backgroundColor: "darkgrey",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  dropdownActive: {
+    backgroundColor: "darkgrey",
+  },
+  dropdownText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  dropdownItem: {
+    padding: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    borderRadius: 5,
+    marginVertical: 4,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#28a745",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  xContainer: {
+    flex: 1,
+    position: "absolute",
+    height: "100%",
+    right: 10,
+    justifyContent: "center",
+    zIndex: 1,
   },
 });
