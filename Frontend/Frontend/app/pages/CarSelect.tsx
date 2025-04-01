@@ -309,7 +309,7 @@ export default CarSelectPage;
 const carStyles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingRight: 10,
   },
   inputContainer: {
     position: "relative",

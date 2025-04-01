@@ -4,11 +4,12 @@ import CarSelect from './CarSelect';
 import UserWorkTimesPage from './UserWorkTime';
 import Addresses from './Addresses';
 import { NavBar } from '../components/NavBar';
+import { Ionicons } from '@expo/vector-icons';
 
 const sections = [
-    { id: '1', title: 'Car Selection', component: <CarSelect /> },
-    { id: '2', title: 'Addresses', component: <Addresses /> },
-    { id: '3', title: 'Work Times', component: <UserWorkTimesPage /> },
+    { id: '1', title: 'Car', icon: "car", component: <CarSelect /> },
+    { id: '2', title: 'Addresses', icon: "location", component: <Addresses /> },
+    { id: '3', title: 'Work Times', icon: "time", component: <UserWorkTimesPage /> },
 ];
 
 const Profile: React.FC = () => {
@@ -20,6 +21,7 @@ const Profile: React.FC = () => {
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View style={styles.section}>
+                        <Ionicons name={item.icon as "car-sport" | "location" | "time"} size={28} color="#333" />
                         <Text style={styles.subHeader}>{item.title}</Text>
                         {item.component}
                     </View>
