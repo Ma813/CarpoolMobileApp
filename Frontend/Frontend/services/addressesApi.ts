@@ -6,6 +6,16 @@ export type Addresses = {
     work_address: string;
 };
 
+export type Trip = {
+    start_latitude?: number;
+    start_longitude?: number;
+
+    destination: string;
+    destination_latitude?: number;
+    destination_longitude?: number;
+};
+
+
 const CONTROLLER_NAME = 'addresses';
 
 export const postAddresses = async (address: Addresses) => {
@@ -25,7 +35,7 @@ export const getLastAddresses = async () => {
         return [];
     }
 };
-export const postDestination = async (destination: Suggestion) => {
+export const postDestination = async (destination: Trip) => {
     try {
         const response = await api.post(`/destinations/addDestination`, destination);
         return response.data;

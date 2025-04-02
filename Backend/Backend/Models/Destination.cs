@@ -11,5 +11,7 @@ namespace Backend.Models
         public double? longitude { get; set; }
         public DateTime? date { get; set; }
         public int user_id { get; set; }
+        public double? co2_emission { get; set; }
+        public bool? default_car { get; set; }
     }
 }

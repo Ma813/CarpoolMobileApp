@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, View, Alert, TextInput, FlatList, TouchableOpacity, Text, Button } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
-import { fetchAddresses, Suggestion } from "@/services/mapbox";
+import { fetchAddresses, getAddressFromCoordinates, Suggestion } from "@/services/mapbox";
 import { NavBar } from "../components/NavBar";
-import { getLastAddresses, postDestination } from "@/services/addressesApi";
+import { getLastAddresses, postDestination, Trip } from "@/services/addressesApi";
 
 const Map = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
@@ -21,6 +21,12 @@ const Map = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [recentAddresses, setRecentAddresses] = useState<Suggestion[]>([]); // State to store recent addresses
+  const [CO2, setCO2] = useState<number | null>(null); // State to store CO2 emissions
+  const [carDefault, setCarDefault] = useState<Boolean>(true); // State to store car default
+  const [marker, setMarker] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null); // Dynamic marker
 
   // Fetch the current location of the device
   const fetchCurrentLocation = () => {
@@ -108,37 +114,51 @@ const Map = () => {
     }
   };
 
-  const handleMapPress = (event: {
+  const handleMapPress = async (event: {
     nativeEvent: { coordinate: { latitude: number; longitude: number } };
   }) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
 
     // Set the last marker as the destination
-    setDestination({ latitude, longitude });
-    console.log("Destination set to:", { latitude, longitude });
+    setMarker({ latitude, longitude });
+    setDestination(null);
+    setCO2(null); // Reset CO2 emissions when a new marker is placed
+    setCarDefault(true); // Reset car default when a new marker is placed
 
-
+    const address = await getAddressFromCoordinates(latitude, longitude);
     const selected =
     {
       id: "",
-      place_name: "Custom marker",
+      place_name: address ?? "Custom marker",
       longitude: longitude,
       latitude: latitude,
     };
 
     setSelectedSuggestion(selected);
-    setQuery("Custom marker");
+    setQuery(address ?? "Custom marker");
     setSuggestions([]);
-    postDestination(selected); // Save the custom marker as a destination
   };
 
-  const handleGoPress = () => {
+  const handleGoPress = async () => {
+    setMarker(null); // Clear the marker when "GO" is pressed
     console.log("Go to address:", selectedSuggestion?.place_name);
     if (selectedSuggestion) {
       try {
         setDestination({ latitude: selectedSuggestion.latitude ?? 56, longitude: selectedSuggestion.longitude ?? 24 });
-        console.log(selectedSuggestion);
-        postDestination(selectedSuggestion);
+        
+        const trip = {
+          start_latitude: currentLocation?.latitude,
+          start_longitude: currentLocation?.longitude,
+          destination: selectedSuggestion.place_name,
+          destination_latitude: selectedSuggestion.latitude,
+          destination_longitude: selectedSuggestion.longitude,
+        };
+
+
+        const response = await postDestination(trip); // Save the custom marker as a destination
+        setCO2(response.co2_emission); // Set CO2 emissions from the response
+        setCarDefault(response.default_car);
+
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -193,6 +213,38 @@ const Map = () => {
           )}
         />
       </View>
+
+
+      {CO2 && (
+        <View style={{ padding: 10, backgroundColor: "white", flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+            CO2 Emissions for trip: {CO2.toFixed(2)} kg
+          </Text>
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                "CO2 Emissions Info",
+                `This value represents the estimated CO2 emissions for the trip based on the selected route.\n\n` +
+                (carDefault
+                  ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
+                  : "The calculation is based on your car.")
+              )
+            }
+            style={{
+              marginLeft: 10,
+              backgroundColor: "#9fbf2a",
+              borderRadius: 50,
+              width: 24,
+              height: 24,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "bold" }}>?</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <MapView
         style={styles.map}
         region={
@@ -217,8 +269,16 @@ const Map = () => {
         {/* Destination Marker */}
         {destination && <Marker coordinate={destination} title="Destination" />}
 
+        {marker && (
+          <Marker
+            coordinate={marker}
+            title="Custom marker"
+            pinColor="blue" // Change the color of the marker
+          />
+        )}
+
         {/* Route Polyline */}
-        {routeCoordinates && (
+        {routeCoordinates && destination && (
           <Polyline
             coordinates={routeCoordinates}
             strokeColor="red"

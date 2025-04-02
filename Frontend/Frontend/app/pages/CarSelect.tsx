@@ -24,6 +24,7 @@ const CarSelectPage: React.FC = () => {
   const [fuelType, setFuelType] = useState<string | null>(null);
   const [showFuelDropdown, setShowFuelDropdown] = useState(false);
   const [fuelEfficiency, setFuelEfficiency] = useState<number>(0);
+  const [fuelEfficiencyQuery, setFuelEfficiencyQuery] = useState("");
 
 
   const fuelTypes = [
@@ -54,6 +55,7 @@ const CarSelectPage: React.FC = () => {
         setShowBrands(false);
         setShowModels(false);
         setFuelEfficiency(car.fuel_efficiency);
+        setFuelEfficiencyQuery(car.fuel_efficiency.toString().replace('.', ','));
       }
     } catch (error) {
       console.error("Error fetching existing car:", error);
@@ -286,10 +288,12 @@ const CarSelectPage: React.FC = () => {
           </View>
           <View style={{ flex: 1 }}>
             <TextInput
+              value={fuelEfficiencyQuery}
               style={carStyles.input}
               keyboardType="numeric"
               onChangeText={(text) => {
                 const formattedText = text.replace(',', '.');
+                setFuelEfficiencyQuery(text);
                 setFuelEfficiency(parseFloat(formattedText));
               }}
             />
