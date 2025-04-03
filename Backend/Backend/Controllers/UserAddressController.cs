@@ -87,7 +87,7 @@ namespace Backend.Controllers
         }
         [Authorize]
         [HttpGet("getClosestColleagues")]
-        public async Task<ActionResult<IEnumerable<UserAddressDto>>> GetClosestColleagues()
+        public async Task<ActionResult<IEnumerable<UserAddressDto>>> GetClosestColleagues(double range)
         {
             var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
             if (userId == null)
@@ -148,26 +148,27 @@ namespace Backend.Controllers
                 
                 var c = colleagues[i];
                 var user = await _context.Users.FindAsync(c.user_id);
-
-                result.Add(new PartyColleagueDTO
+                if (distances[i + 1].GetDouble() < range)
                 {
-                    user_id = c.user_id,
-                    user_name = user?.Username ?? "Unknown",
-                    work_address = c.work_address,
-                    home_address = c.home_address,
-                    work_coordinates = new CoordinatesDto
+                    result.Add(new PartyColleagueDTO
                     {
-                        latitude = c.work_lat,
-                        longitude = c.work_lon
-                    },
-                    home_coordinates = new CoordinatesDto
-                    {
-                        latitude = c.home_lat,
-                        longitude = c.home_lon
-                    },
-                    distance = distances[i+1].GetDouble()
-                });
-                
+                        user_id = c.user_id,
+                        user_name = user?.Username ?? "Unknown",
+                        work_address = c.work_address,
+                        home_address = c.home_address,
+                        work_coordinates = new CoordinatesDto
+                        {
+                            latitude = c.work_lat,
+                            longitude = c.work_lon
+                        },
+                        home_coordinates = new CoordinatesDto
+                        {
+                            latitude = c.home_lat,
+                            longitude = c.home_lon
+                        },
+                        distance = distances[i + 1].GetDouble()
+                    });
+                }
             }
 
             return Ok(result);

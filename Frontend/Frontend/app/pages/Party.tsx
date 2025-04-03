@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  TextInput,
 } from "react-native";
 import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
@@ -13,11 +14,12 @@ import { getClosestColleagues } from "@/services/addressesApi"; // Import the AP
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
   const [loading, setLoading] = useState<boolean>(false); // State to manage loading
+  const [range, setRange] = useState<number>(15000); // State to manage search range
 
   const handleGetClosestColleagues = async () => {
     setLoading(true);
     try {
-      const response = await getClosestColleagues(); // Call the API
+      const response = await getClosestColleagues(range); // Call the API
       console.log("Closest colleagues:", response); // Log the response for debugging
       setColleagues(response); // Update the state with the results
     } catch (error) {
@@ -40,6 +42,13 @@ const Party: React.FC = () => {
           {loading ? "Loading..." : "Get Closest Colleagues"}
         </Text>
       </TouchableOpacity>
+      <Text style={styles.inputLabel}>Search Range (meters):</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        placeholder="Enter maximum range to find colleagues"
+        onChangeText={(text) => setRange(Number(text))}
+      />
 
       {/* Display the list of colleagues */}
       <FlatList
@@ -104,5 +113,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
     marginTop: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 20,
   },
 });
