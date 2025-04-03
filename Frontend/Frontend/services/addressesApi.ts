@@ -3,6 +3,8 @@ import { Suggestion } from './mapbox';
 
 export type Addresses = {
     home_address: string;
+    home_coordinates: {latitude: number; longitude: number};
+    work_coordinates: {latitude: number; longitude: number};
     work_address: string;
 };
 
@@ -44,3 +46,13 @@ export const postDestination = async (destination: Trip) => {
         throw error;
     }
 }
+export const getClosestColleagues = async () => {
+    const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL; // Use your backend base URL
+    try {
+        const response = await api.get(`/${CONTROLLER_NAME}/getClosestColleagues`);
+        return response.data; // Return the list of closest colleagues
+    } catch (error) {
+        console.error("Error fetching closest colleagues:", error);
+        throw error;
+    }
+};

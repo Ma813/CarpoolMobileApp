@@ -46,3 +46,19 @@ export const getAddressFromCoordinates = async (latitude: number, longitude: num
         return null;
     }
 };
+
+export const geocodeAddress = async (address: string) => {
+    const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN; // Use your Mapbox token
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_ACCESS_TOKEN}`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+            const [longitude, latitude] = data.features[0].geometry.coordinates;
+            return { latitude, longitude };
+        }
+    } catch (error) {
+        console.error("Error geocoding address:", error);
+    }
+    return null;
+};
