@@ -46,10 +46,10 @@ export const postDestination = async (destination: Trip) => {
         throw error;
     }
 }
-export const getClosestColleagues = async () => {
+export const getClosestColleagues = async (range: number) => {
     const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL; // Use your backend base URL
     try {
-        const response = await api.get(`/${CONTROLLER_NAME}/getClosestColleagues`);
+        const response = await api.get(`/${CONTROLLER_NAME}/getClosestColleagues?range=${range}`);
         return response.data; // Return the list of closest colleagues
     } catch (error) {
         console.error("Error fetching closest colleagues:", error);
