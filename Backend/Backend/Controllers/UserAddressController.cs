@@ -166,7 +166,8 @@ namespace Backend.Controllers
                             latitude = c.home_lat,
                             longitude = c.home_lon
                         },
-                        distance = distances[i + 1].GetDouble()
+                        distance = distances[i + 1].GetDouble(),
+                        image_path = user?.ImagePath
                     });
                 }
             }
