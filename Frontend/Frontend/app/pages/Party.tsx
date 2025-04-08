@@ -1,15 +1,22 @@
 import React, { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   Alert,
   TextInput,
+  Image,
 } from "react-native";
+import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
+
+type PartyColleague = {
+  user_name: string;
+  liked: boolean;
+};
 
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
@@ -28,6 +35,26 @@ const Party: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwipeRight = (cardIndex: number) => {
+    const swipedColleague = colleagues[cardIndex];
+    console.log("Swiped right on:", swipedColleague);
+  };
+
+  const handleSwipeLeft = (cardIndex: number) => {
+    const swipedColleague = colleagues[cardIndex];
+    console.log("Swiped left on:", swipedColleague);
+  };
+  const router = useRouter();
+  const handleSwipedAll = () => {
+    console.log("All cards swiped");
+    Alert.alert("All cards swiped", "You have swiped all colleagues.", [
+      {
+        text: "OK",
+        onPress: () => router.navigate("/"), // Navigate to the main page
+      },
+    ]);
   };
 
   return (
@@ -50,26 +77,76 @@ const Party: React.FC = () => {
         onChangeText={(text) => setRange(Number(text))}
       />
 
-      {/* Display the list of colleagues */}
-      <FlatList
-        data={colleagues}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.colleagueItem}>
-            <Text style={styles.colleagueText}>
-              {item.user_name || "Unknown User"}
-            </Text>
-            <Text style={styles.colleagueText}>
-              Distance: {item.distance} m
-            </Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          !loading ? (
-            <Text style={styles.emptyText}>No colleagues found.</Text>
-          ) : null
-        }
-      />
+      {/* Swiper for colleagues */}
+      {colleagues.length > 0 ? (
+        <Swiper
+          cards={colleagues}
+          renderCard={(colleague) => (
+            <View style={styles.card}>
+              <Text style={styles.cardText}>
+                {colleague.user_name || "Unknown User"}
+              </Text>
+              <Text style={styles.cardText}>
+                Distance: {colleague.distance} m
+              </Text>
+              {colleague.image_path && (
+                <View style={{ marginTop: 10, flex: 1, width: "100%" }}>
+                  <Image
+                    source={{ uri: colleague.image_path }}
+                    style={{ width: "100%", height: "100%", borderRadius: 10 }}
+                    resizeMode="cover"
+                  />
+                </View>
+              )}
+            </View>
+          )}
+          verticalSwipe={false}
+          onSwipedAll={handleSwipedAll}
+          onSwipedRight={handleSwipeRight}
+          onSwipedLeft={handleSwipeLeft}
+          cardIndex={0}
+          backgroundColor={"#f0f0f0"}
+          stackSize={3}
+          overlayLabels={{
+            left: {
+              title: "NOPE",
+              style: {
+                label: {
+                  backgroundColor: "red",
+                  color: "white",
+                  fontSize: 24,
+                },
+                wrapper: {
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  justifyContent: "flex-start",
+                  marginTop: 20,
+                  marginLeft: -20,
+                },
+              },
+            },
+            right: {
+              title: "LIKE",
+              style: {
+                label: {
+                  backgroundColor: "green",
+                  color: "white",
+                  fontSize: 24,
+                },
+                wrapper: {
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  marginTop: 20,
+                  marginLeft: 20,
+                },
+              },
+            },
+          }}
+        />
+      ) : (
+        !loading && <Text style={styles.emptyText}>No colleagues found.</Text>
+      )}
       <NavBar />
     </View>
   );
@@ -101,13 +178,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  colleagueItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  card: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
   },
-  colleagueText: {
-    fontSize: 16,
+  cardText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
   },
   emptyText: {
     textAlign: "center",
@@ -125,9 +209,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
-    marginBottom: 20,
-  },
-  inputContainer: {
     marginBottom: 20,
   },
 });
