@@ -10,6 +10,9 @@ public class AppDbContext : DbContext
     public DbSet<Car> Cars { get; set; }
     public DbSet<UserAddress> UserAddresses { get; set; }
     public DbSet<Destination> Destinations { get; set; }
+    public DbSet<Party_Member> Party_Members { get; set; }
+    public DbSet<Party> Party { get; set; }
+    public DbSet<User_Preference> User_Preferences { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
