@@ -174,6 +174,36 @@ namespace Backend.Controllers
 
             return Ok(result);
         }
+        [Authorize]
+        [HttpPost("setUserPreference")]
+        public async Task<ActionResult> SetUserPreference([FromBody] UserPrefDTO userPref)
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+            var user_Preference = await _context.User_Preferences.FirstOrDefaultAsync(a => a.user_id == int.Parse(userId) && a.other_user_id == userPref.other_user_id);
+            if (user_Preference == null)
+            {
+                User_Preference pref= new User_Preference
+                {
+                    user_id = int.Parse(userId),
+                    other_user_id = userPref.other_user_id,
+                    liked = userPref.liked
+                };
+                await _context.User_Preferences.AddAsync(pref);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                user_Preference.liked = userPref.liked;
+                user_Preference.other_user_id = userPref.other_user_id;
+                _context.User_Preferences.Update(user_Preference);
+                await _context.SaveChangesAsync();
+            }
+            return Ok("User preference updated successfully.");
+        }
 
     }
 }

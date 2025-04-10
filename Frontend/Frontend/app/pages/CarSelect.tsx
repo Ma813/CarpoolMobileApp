@@ -1,7 +1,14 @@
 import api from "@/services/api";
 import { useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
 import { styles } from "./ProfileStyles";
 import { X } from "lucide-react-native";
 import { Car, getCar, postCar } from "@/services/carApi";
@@ -25,7 +32,6 @@ const CarSelectPage: React.FC = () => {
   const [showFuelDropdown, setShowFuelDropdown] = useState(false);
   const [fuelEfficiency, setFuelEfficiency] = useState<number>(0);
   const [fuelEfficiencyQuery, setFuelEfficiencyQuery] = useState("");
-
 
   const fuelTypes = [
     { label: "Petrol", value: "Petrol" },
@@ -55,23 +61,24 @@ const CarSelectPage: React.FC = () => {
         setShowBrands(false);
         setShowModels(false);
         setFuelEfficiency(car.fuel_efficiency);
-        setFuelEfficiencyQuery(car.fuel_efficiency.toString().replace('.', ','));
+        setFuelEfficiencyQuery(
+          car.fuel_efficiency.toString().replace(".", ",")
+        );
       }
     } catch (error) {
       console.error("Error fetching existing car:", error);
-      alert("Failed to fetch existing car.");
     }
   };
 
   const fetchCarBrands = async () => {
     try {
       const response = await fetch(
-        "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json"
+        "https://vpic.nhtsa.dot.gov/api/vehicles/GetMakesForVehicleType/car?format=json"
       );
       const carMakes = await response.json();
       const formattedMakes = carMakes.Results.map((make: any) => ({
-        label: make.Make_Name,
-        value: make.Make_Name,
+        label: make.MakeName,
+        value: make.MakeName,
       })).filter((make: any) => make.value);
       setAllBrands(formattedMakes);
     } catch (error) {
@@ -115,14 +122,11 @@ const CarSelectPage: React.FC = () => {
       .then((response) => {
         console.log("Car saved successfully:", response);
         alert("Car saved successfully.");
-      }
-      )
+      })
       .catch((error) => {
         console.error("Error saving car:", error);
         alert("Failed to save car.");
-      }
-      );
-
+      });
   };
 
   return (
@@ -143,7 +147,6 @@ const CarSelectPage: React.FC = () => {
           placeholderTextColor={"#000"}
         />
         {brandSearch.length > 0 && (
-
           <TouchableOpacity
             style={carStyles.xContainer}
             onPress={() => {
@@ -158,7 +161,8 @@ const CarSelectPage: React.FC = () => {
       </View>
 
       {showBrands && (
-        <FlatList style={{ marginBottom: 10 }}
+        <FlatList
+          style={{ marginBottom: 10 }}
           data={allbrands.filter((brand) =>
             brand.label.toLowerCase().includes(brandSearch.toLowerCase())
           )}
@@ -216,7 +220,8 @@ const CarSelectPage: React.FC = () => {
           </View>
 
           {showModels && (
-            <FlatList style={{ marginBottom: 10 }}
+            <FlatList
+              style={{ marginBottom: 10 }}
               data={allModels.filter((model) =>
                 model.label.toLowerCase().includes(modelSearch.toLowerCase())
               )}
@@ -254,14 +259,18 @@ const CarSelectPage: React.FC = () => {
 
       <TouchableOpacity
         onPress={() => setShowFuelDropdown(!showFuelDropdown)}
-        style={[!fuelType ? carStyles.dropdownToggle : carStyles.dropdownSelected, showFuelDropdown && carStyles.dropdownActive]}
+        style={[
+          !fuelType ? carStyles.dropdownToggle : carStyles.dropdownSelected,
+          showFuelDropdown && carStyles.dropdownActive,
+        ]}
       >
         <Text style={carStyles.dropdownText}>
           {fuelType ? `Fuel Type: ${fuelType}` : "Select Fuel Type"}
         </Text>
       </TouchableOpacity>
       {showFuelDropdown && (
-        <FlatList style={{ marginBottom: 10 }}
+        <FlatList
+          style={{ marginBottom: 10 }}
           data={fuelTypes}
           keyExtractor={(item) => item.value}
           renderItem={({ item }) => (
@@ -282,9 +291,17 @@ const CarSelectPage: React.FC = () => {
       )}
 
       {fuelType === "Petrol" || fuelType === "Diesel" ? (
-        <View style={{ flexDirection: "row", marginBottom: 10, alignItems: "center" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            marginBottom: 10,
+            alignItems: "center",
+          }}
+        >
           <View style={{ flex: 3 }}>
-            <Text style={carStyles.inputLabel}>Fuel efficiency (liters / 100km):</Text>
+            <Text style={carStyles.inputLabel}>
+              Fuel efficiency (liters / 100km):
+            </Text>
           </View>
           <View style={{ flex: 1 }}>
             <TextInput
@@ -292,7 +309,7 @@ const CarSelectPage: React.FC = () => {
               style={carStyles.input}
               keyboardType="numeric"
               onChangeText={(text) => {
-                const formattedText = text.replace(',', '.');
+                const formattedText = text.replace(",", ".");
                 setFuelEfficiencyQuery(text);
                 setFuelEfficiency(parseFloat(formattedText));
               }}

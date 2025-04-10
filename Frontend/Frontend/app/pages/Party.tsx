@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -12,16 +12,13 @@ import {
 import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
-
-type PartyColleague = {
-  user_name: string;
-  liked: boolean;
-};
+import api from "@/services/api";
 
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
   const [loading, setLoading] = useState<boolean>(false); // State to manage loading
   const [range, setRange] = useState<number>(15000); // State to manage search range
+  const invitedColleaguesRef = useRef<any[]>([]);
 
   const handleGetClosestColleagues = async () => {
     setLoading(true);
@@ -37,17 +34,39 @@ const Party: React.FC = () => {
     }
   };
 
-  const handleSwipeRight = (cardIndex: number) => {
+  const handleSwipeRight = async (cardIndex: number) => {
     const swipedColleague = colleagues[cardIndex];
-    console.log("Swiped right on:", swipedColleague);
+
+    invitedColleaguesRef.current.push(swipedColleague); // update ref
+
+    const postData = {
+      other_user_id: swipedColleague.user_id,
+      liked: true,
+    };
+
+    try {
+      const response = await api.post("/addresses/setUserPreference", postData);
+      console.log("Preference sent successfully:", response.data);
+    } catch (error) {
+      console.error("Error sending preference:", error);
+    }
   };
 
-  const handleSwipeLeft = (cardIndex: number) => {
+  const handleSwipeLeft = async (cardIndex: number) => {
     const swipedColleague = colleagues[cardIndex];
-    console.log("Swiped left on:", swipedColleague);
+    const postData = {
+      other_user_id: swipedColleague.user_id,
+      liked: false,
+    };
+    try {
+      const response = await api.post("/addresses/setUserPreference", postData);
+      console.log("Preference sent successfully:", response.data);
+    } catch (error) {
+      console.error("Error sending preference:", error);
+    }
   };
   const router = useRouter();
-  const handleSwipedAll = () => {
+  const handleSwipedAll = async () => {
     console.log("All cards swiped");
     Alert.alert("All cards swiped", "You have swiped all colleagues.", [
       {
@@ -55,6 +74,26 @@ const Party: React.FC = () => {
         onPress: () => router.navigate("/"), // Navigate to the main page
       },
     ]);
+    try {
+      const response = await api.post("/party/createParty");
+      console.log("Party sent successfully:", response.data);
+      for (const colleague of invitedColleaguesRef.current) {
+        const postData = {
+          party_id: response.data.id,
+          accepted: false,
+          user_id: colleague.user_id,
+          role: "passenger",
+        };
+        try {
+          const response = await api.post("/party/addPartyMember", postData);
+          console.log("Colleague invited successfully:", response.data);
+        } catch (error) {
+          console.error("Error inviting colleague:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Error creating party:", error);
+    }
   };
 
   return (
