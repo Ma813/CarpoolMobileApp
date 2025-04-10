@@ -5,7 +5,7 @@ import * as Location from "expo-location";
 import { fetchAddresses, getAddressFromCoordinates, Suggestion } from "@/services/mapbox";
 import { NavBar } from "../components/NavBar";
 import { getLastAddresses, postDestination, Trip } from "@/services/addressesApi";
-
+import { fetchOptimalPickup } from "@/services/addressesApi";
 const Map = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentLocation, setCurrentLocation] = useState<{
@@ -28,14 +28,61 @@ const Map = () => {
     longitude: number;
   } | null>(null); // Dynamic marker
 
+  const [pickupPoints, setPickupPoints] = useState<
+  { latitude: number; longitude: number; order: number }[] 
+>([]);
+
+const handleShowPickups = async () => {
+  if (!currentLocation) return;
+
+  try {
+    const data = await fetchOptimalPickup();
+    if (Array.isArray(data)) {
+      setPickupPoints(data);
+      await fetchPickupRoute();
+    }
+  } catch (error) {
+    console.error("Klaida gaunant pickup taškus:", error);
+  }
+};
+
+const fetchPickupRoute = async () => {
+  if (!currentLocation || pickupPoints.length === 0) return;
+
+  const accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+  const allPoints = [
+    { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+    ...pickupPoints.sort((a, b) => a.order - b.order),
+  ];
+  const coordinatesStr = allPoints.map(p => `${p.longitude},${p.latitude}`).join(";");
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesStr}?geometries=geojson&access_token=${accessToken}&overview=full`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.routes.length) {
+      const coordinates = data.routes[0].geometry.coordinates.map(
+        ([lng, lat]: [number, number]) => ({
+          latitude: lat,
+          longitude: lng,
+        })
+      );
+      setRouteCoordinates(coordinates);
+    }
+  } catch (error) {
+    console.error("Error fetching pickup route:", error);
+  }
+};
+
   // Fetch the current location of the device
   const fetchCurrentLocation = () => {
-    // Request location permissions
+        // Request location permissions
     Location.requestForegroundPermissionsAsync()
       .then(({ status }) => {
         if (status !== "granted") {
           Alert.alert(
-            "Permission Denied",
+            "Permission Denied", 
             "Location permission is required to use this feature."
           );
           throw new Error("Location permission not granted");
@@ -67,6 +114,12 @@ const Map = () => {
     fetchRoute();
   }, [destination]); // Fetch the route when the destination changes
 
+  useEffect(() => {
+    if (pickupPoints.length > 0) {
+      fetchPickupRoute();
+    }
+  }, [pickupPoints]);
+  
   useEffect(() => {
     getLastAddresses().then((data) => {
       if (!data || !Array.isArray(data)) {
@@ -194,6 +247,9 @@ const Map = () => {
         <TouchableOpacity style={styles.button} onPress={handleGoPress}>
           <Text style={styles.buttonText}>GO</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleShowPickups}>
+          <Text style={styles.buttonText}>Show Pickups</Text>
+        </TouchableOpacity>
       </View>
       <View style={{ backgroundColor: "white", maxHeight: 200 }}>
         <FlatList
@@ -278,13 +334,23 @@ const Map = () => {
         )}
 
         {/* Route Polyline */}
-        {routeCoordinates && destination && (
+        {routeCoordinates.length > 0 && (
           <Polyline
             coordinates={routeCoordinates}
             strokeColor="red"
             strokeWidth={4}
           />
         )}
+
+        {pickupPoints.map((point) => (
+          <Marker
+            key={point.order}
+            coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+            title={`Pickup #${point.order + 1}`}
+            description={`Latitude: ${point.latitude}, Longitude: ${point.longitude}`}
+            pinColor="green"
+          />
+        ))}
 
       </MapView>
     </View>
