@@ -8,7 +8,7 @@
         public required string home_address { get; set; }
         public required CoordinatesDto work_coordinates { get; set; }
         public required CoordinatesDto home_coordinates { get; set; }
-        public string? image_path { get; set; };
+        public string? image_path { get; set; }
         public double distance { get; set; } = 0.0;
     }
 }

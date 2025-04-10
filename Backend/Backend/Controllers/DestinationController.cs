@@ -151,5 +151,87 @@ namespace Backend.Controllers
 
             return Ok(lastDestinations);
         }
+        
+        [Authorize]
+        [HttpGet("optimalPickup")]
+        public async Task<ActionResult> OptimalPassengerPickup()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null) return Unauthorized();
+
+            // Gauti vartotojo namų adresą
+            var userAddress = await _context.UserAddresses
+                .FirstOrDefaultAsync(a => a.user_id == int.Parse(userId));
+
+            if (userAddress == null || string.IsNullOrEmpty(userAddress.home_address))
+                return BadRequest("User home address not found");
+
+            string accessToken = _configuration["Mapbox:AccessToken"];
+            using var httpClient = new HttpClient();
+            
+            // Konvertuoti vartotojo adresą į koordinates
+            string userGeocodeUrl = $"https://api.mapbox.com/geocoding/v5/mapbox.places/{Uri.EscapeDataString(userAddress.home_address)}.json?access_token={accessToken}";
+            var userGeocodeResponse = await httpClient.GetStringAsync(userGeocodeUrl);
+            var userGeocodeJson = JsonDocument.Parse(userGeocodeResponse);
+            var userFeatures = userGeocodeJson.RootElement.GetProperty("features");
+
+            if (userFeatures.GetArrayLength() == 0) return BadRequest("Could not determine user location");
+
+            var userFirstFeature = userFeatures[0].GetProperty("center");
+            double userLongitude = userFirstFeature[0].GetDouble();
+            double userLatitude = userFirstFeature[1].GetDouble();
+
+            // 2. Gauti kolegų namų adresus
+            var colleagues = await _context.UserAddresses
+                .Where(a => a.user_id != int.Parse(userId) && a.home_address != null)
+                .Select(a => new { a.user_id, a.home_address })
+                .ToListAsync();
+
+            if (!colleagues.Any()) return NotFound("No colleagues found");
+
+            List<string> coordinatesList = new List<string>();
+            
+            // 3. Konvertuoti kolegų adresus į koordinates
+            foreach (var col in colleagues)
+            {
+                string geocodeUrl = $"https://api.mapbox.com/geocoding/v5/mapbox.places/{Uri.EscapeDataString(col.home_address)}.json?access_token={accessToken}";
+                var geocodeResponse = await httpClient.GetStringAsync(geocodeUrl);
+                var geocodeJson = JsonDocument.Parse(geocodeResponse);
+                
+                var features = geocodeJson.RootElement.GetProperty("features");
+                if (features.GetArrayLength() > 0)
+                {
+                    var firstFeature = features[0].GetProperty("center");
+                    double longitude = firstFeature[0].GetDouble();
+                    double latitude = firstFeature[1].GetDouble();
+                    coordinatesList.Add($"{longitude},{latitude}");
+                }
+            }
+
+            if (!coordinatesList.Any()) return BadRequest("Failed to retrieve coordinates for colleagues");
+            
+            // 4. Sudaryti Mapbox Optimization API užklausą
+            string coordinates = $"{userLongitude},{userLatitude};" + string.Join(";", coordinatesList);
+            string optimizeUrl = $"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coordinates}?access_token={accessToken}&geometries=geojson";
+            
+            var response = await httpClient.GetStringAsync(optimizeUrl);
+            var jsonDoc = JsonDocument.Parse(response);
+            
+            var waypoints = jsonDoc.RootElement.GetProperty("waypoints");
+            if (waypoints.GetArrayLength() == 0) return BadRequest("Could not optimize route");
+            
+            // 5. Surinkti optimizuotą seką
+            var optimizedRoute = waypoints.EnumerateArray()
+                .Select(wp => new
+                {
+                    Order = wp.GetProperty("waypoint_index").GetInt32(),
+                    Longitude = wp.GetProperty("location")[0].GetDouble(),
+                    Latitude = wp.GetProperty("location")[1].GetDouble()
+                })
+                .OrderBy(wp => wp.Order)
+                .ToList();
+            
+            return Ok(optimizedRoute);
+        }
     }
 }
