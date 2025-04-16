@@ -5,11 +5,13 @@ import UserWorkTimesPage from './UserWorkTime';
 import Addresses from './Addresses';
 import { NavBar } from '../components/NavBar';
 import { Ionicons } from '@expo/vector-icons';
+import ModeOfTransport from './ModeOfTransport';
 
 const sections = [
     { id: '1', title: 'Car', icon: "car", component: <CarSelect /> },
     { id: '2', title: 'Addresses', icon: "location", component: <Addresses /> },
-    { id: '3', title: 'Work Times', icon: "time", component: <UserWorkTimesPage /> },
+    { id: '3', title: 'Mode of Transport', icon: "walk-outline", component: <ModeOfTransport /> },
+    { id: '4', title: 'Work Times', icon: "time", component: <UserWorkTimesPage /> },
 ];
 
 const Profile: React.FC = () => {

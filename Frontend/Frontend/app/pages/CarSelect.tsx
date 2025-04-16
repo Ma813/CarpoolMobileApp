@@ -66,7 +66,7 @@ const CarSelectPage: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error("Error fetching existing car:", error);
+      console.log("Error fetching existing car:", error); // probably car is not set yet
     }
   };
 
@@ -105,7 +105,7 @@ const CarSelectPage: React.FC = () => {
   };
 
   const submitCar = async () => {
-    if (!brand || !model || !licensePlate || !fuelType || !fuelEfficiency) {
+    if (!brand || !model || !licensePlate || !fuelType || (fuelType == "Petrol" || fuelType == "Diesel" && !fuelEfficiency) ) {
       alert("Please fill in all fields.");
       return;
     }

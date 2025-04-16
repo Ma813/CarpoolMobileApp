@@ -8,6 +8,8 @@ import {
   Alert,
   TextInput,
   Image,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
@@ -97,97 +99,99 @@ const Party: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Party</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleGetClosestColleagues}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Loading..." : "Get Closest Colleagues"}
-        </Text>
-      </TouchableOpacity>
-      <Text style={styles.inputLabel}>Search Range (meters):</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        placeholder="Enter maximum range to find colleagues"
-        onChangeText={(text) => setRange(Number(text))}
-      />
-
-      {/* Swiper for colleagues */}
-      {colleagues.length > 0 ? (
-        <Swiper
-          cards={colleagues}
-          renderCard={(colleague) => (
-            <View style={styles.card}>
-              <Text style={styles.cardText}>
-                {colleague.user_name || "Unknown User"}
-              </Text>
-              <Text style={styles.cardText}>
-                Distance: {colleague.distance} m
-              </Text>
-              {colleague.image_path && (
-                <View style={{ marginTop: 10, flex: 1, width: "100%" }}>
-                  <Image
-                    source={{ uri: colleague.image_path }}
-                    style={{ width: "100%", height: "100%", borderRadius: 10 }}
-                    resizeMode="cover"
-                  />
-                </View>
-              )}
-            </View>
-          )}
-          verticalSwipe={false}
-          onSwipedAll={handleSwipedAll}
-          onSwipedRight={handleSwipeRight}
-          onSwipedLeft={handleSwipeLeft}
-          cardIndex={0}
-          backgroundColor={"#f0f0f0"}
-          stackSize={3}
-          overlayLabels={{
-            left: {
-              title: "NOPE",
-              style: {
-                label: {
-                  backgroundColor: "red",
-                  color: "white",
-                  fontSize: 24,
-                },
-                wrapper: {
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                  justifyContent: "flex-start",
-                  marginTop: 20,
-                  marginLeft: -20,
-                },
-              },
-            },
-            right: {
-              title: "LIKE",
-              style: {
-                label: {
-                  backgroundColor: "green",
-                  color: "white",
-                  fontSize: 24,
-                },
-                wrapper: {
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "flex-start",
-                  marginTop: 20,
-                  marginLeft: 20,
-                },
-              },
-            },
-          }}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Party</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleGetClosestColleagues}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Loading..." : "Get Closest Colleagues"}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.inputLabel}>Search Range (meters):</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Enter maximum range to find colleagues"
+          onChangeText={(text) => setRange(Number(text))}
         />
-      ) : (
-        !loading && <Text style={styles.emptyText}>No colleagues found.</Text>
-      )}
-      <NavBar />
-    </View>
+
+        {/* Swiper for colleagues */}
+        {colleagues.length > 0 ? (
+          <Swiper
+            cards={colleagues}
+            renderCard={(colleague) => (
+              <View style={styles.card}>
+                <Text style={styles.cardText}>
+                  {colleague.user_name || "Unknown User"}
+                </Text>
+                <Text style={styles.cardText}>
+                  Distance: {colleague.distance} m
+                </Text>
+                {colleague.image_path && (
+                  <View style={{ marginTop: 10, flex: 1, width: "100%" }}>
+                    <Image
+                      source={{ uri: colleague.image_path }}
+                      style={{ width: "100%", height: "100%", borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                )}
+              </View>
+            )}
+            verticalSwipe={false}
+            onSwipedAll={handleSwipedAll}
+            onSwipedRight={handleSwipeRight}
+            onSwipedLeft={handleSwipeLeft}
+            cardIndex={0}
+            backgroundColor={"#f0f0f0"}
+            stackSize={3}
+            overlayLabels={{
+              left: {
+                title: "NOPE",
+                style: {
+                  label: {
+                    backgroundColor: "red",
+                    color: "white",
+                    fontSize: 24,
+                  },
+                  wrapper: {
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    justifyContent: "flex-start",
+                    marginTop: 20,
+                    marginLeft: -20,
+                  },
+                },
+              },
+              right: {
+                title: "LIKE",
+                style: {
+                  label: {
+                    backgroundColor: "green",
+                    color: "white",
+                    fontSize: 24,
+                  },
+                  wrapper: {
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    justifyContent: "flex-start",
+                    marginTop: 20,
+                    marginLeft: 20,
+                  },
+                },
+              },
+            }}
+          />
+        ) : (
+          !loading && <Text style={styles.emptyText}>No colleagues found.</Text>
+        )}
+        <NavBar />
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -197,6 +201,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    paddingTop: 50,
     backgroundColor: "#fff",
   },
   title: {

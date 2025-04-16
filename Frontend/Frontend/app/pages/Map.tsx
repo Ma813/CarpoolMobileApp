@@ -42,7 +42,7 @@ const handleShowPickups = async () => {
       await fetchPickupRoute();
     }
   } catch (error) {
-    console.error("Klaida gaunant pickup taškus:", error);
+    console.log("Error fetching optimal pickup points:", error);
   }
 };
 
