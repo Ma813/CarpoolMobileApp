@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -10,17 +10,34 @@ import {
   Image,
   Keyboard,
   TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
 import api from "@/services/api";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
   const [loading, setLoading] = useState<boolean>(false); // State to manage loading
   const [range, setRange] = useState<number>(15000); // State to manage search range
   const invitedColleaguesRef = useRef<any[]>([]);
+  const [userParties, setUserParties] = useState<any[]>([]);
+
+  const GetUserParties = async () => {
+    try {
+      const response = await api.get("/party/getUserParties");
+      console.log("User parties:", response.data);
+      setUserParties(response.data); // Store response in state
+    } catch (error) {
+      console.error("Error fetching user parties:", error);
+    }
+  };
+
+  useEffect(() => {
+    GetUserParties();
+  }, []); // Fetch user parties on component mount
 
   const handleGetClosestColleagues = async () => {
     setLoading(true);
@@ -98,99 +115,119 @@ const Party: React.FC = () => {
     }
   };
 
+  const openCreatePartyPage = () => {
+    router.navigate("/pages/CreateParty");
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Party</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleGetClosestColleagues}
-          disabled={loading}
+      <ScrollView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.buttonText}>
-            {loading ? "Loading..." : "Get Closest Colleagues"}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.inputLabel}>Search Range (meters):</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Enter maximum range to find colleagues"
-          onChangeText={(text) => setRange(Number(text))}
-        />
+          <Text style={styles.title}>Party</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={openCreatePartyPage}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Create Party</Text>
+          </TouchableOpacity>
+          {userParties.length > 0 ? (
+            userParties.map((party, index) => (
+              <View key={index} style={styles.partyCard}>
+                <Text style={styles.partyTitle}>Party #{party.party_id}</Text>
+                <Text style={styles.driverText}>
+                  Driver: {party.driver_name}
+                </Text>
 
-        {/* Swiper for colleagues */}
-        {colleagues.length > 0 ? (
-          <Swiper
-            cards={colleagues}
-            renderCard={(colleague) => (
-              <View style={styles.card}>
-                <Text style={styles.cardText}>
-                  {colleague.user_name || "Unknown User"}
-                </Text>
-                <Text style={styles.cardText}>
-                  Distance: {colleague.distance} m
-                </Text>
-                {colleague.image_path && (
-                  <View style={{ marginTop: 10, flex: 1, width: "100%" }}>
-                    <Image
-                      source={{ uri: colleague.image_path }}
-                      style={{ width: "100%", height: "100%", borderRadius: 10 }}
-                      resizeMode="cover"
-                    />
-                  </View>
+                {party.colleague_list.length > 0 ? (
+                  party.colleague_list.map(
+                    (
+                      colleague: {
+                        user_name:
+                          | string
+                          | number
+                          | boolean
+                          | React.ReactElement<
+                              any,
+                              string | React.JSXElementConstructor<any>
+                            >
+                          | Iterable<React.ReactNode>
+                          | React.ReactPortal
+                          | null
+                          | undefined;
+                        distance:
+                          | string
+                          | number
+                          | boolean
+                          | React.ReactElement<
+                              any,
+                              string | React.JSXElementConstructor<any>
+                            >
+                          | Iterable<React.ReactNode>
+                          | React.ReactPortal
+                          | null
+                          | undefined;
+                        home_address:
+                          | string
+                          | number
+                          | boolean
+                          | React.ReactElement<
+                              any,
+                              string | React.JSXElementConstructor<any>
+                            >
+                          | Iterable<React.ReactNode>
+                          | React.ReactPortal
+                          | null
+                          | undefined;
+                        work_address:
+                          | string
+                          | number
+                          | boolean
+                          | React.ReactElement<
+                              any,
+                              string | React.JSXElementConstructor<any>
+                            >
+                          | Iterable<React.ReactNode>
+                          | React.ReactPortal
+                          | null
+                          | undefined;
+                        image_path: any;
+                      },
+                      idx: React.Key | null | undefined
+                    ) => (
+                      <View key={idx} style={styles.colleagueCard}>
+                        <Text style={styles.colleagueText}>
+                          {colleague.user_name} ({colleague.distance} m away)
+                        </Text>
+                        <Text style={styles.colleagueSubText}>
+                          🏠 {colleague.home_address}
+                        </Text>
+                        {colleague.image_path ? (
+                          <Image
+                            source={{ uri: colleague.image_path }}
+                            style={styles.colleagueImage}
+                          />
+                        ) : null}
+                      </View>
+                    )
+                  )
+                ) : (
+                  <Text style={styles.noMembersText}>
+                    No members in this party.
+                  </Text>
                 )}
               </View>
-            )}
-            verticalSwipe={false}
-            onSwipedAll={handleSwipedAll}
-            onSwipedRight={handleSwipeRight}
-            onSwipedLeft={handleSwipeLeft}
-            cardIndex={0}
-            backgroundColor={"#f0f0f0"}
-            stackSize={3}
-            overlayLabels={{
-              left: {
-                title: "NOPE",
-                style: {
-                  label: {
-                    backgroundColor: "red",
-                    color: "white",
-                    fontSize: 24,
-                  },
-                  wrapper: {
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    justifyContent: "flex-start",
-                    marginTop: 20,
-                    marginLeft: -20,
-                  },
-                },
-              },
-              right: {
-                title: "LIKE",
-                style: {
-                  label: {
-                    backgroundColor: "green",
-                    color: "white",
-                    fontSize: 24,
-                  },
-                  wrapper: {
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    justifyContent: "flex-start",
-                    marginTop: 20,
-                    marginLeft: 20,
-                  },
-                },
-              },
-            }}
-          />
-        ) : (
-          !loading && <Text style={styles.emptyText}>No colleagues found.</Text>
-        )}
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No parties found.</Text>
+          )}
+        </ScrollView>
+
         <NavBar />
-      </View>
+      </ScrollView>
     </TouchableWithoutFeedback>
   );
 };
@@ -222,37 +259,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  card: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 20,
-  },
-  cardText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
   emptyText: {
     textAlign: "center",
     color: "#999",
     marginTop: 20,
   },
-  inputLabel: {
-    fontSize: 16,
+  partyCard: {
+    marginBottom: 20,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: "#e7f3e7",
+    borderColor: "#c5e1c5",
+    borderWidth: 1,
+  },
+  partyTitle: {
+    fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 5,
+  },
+  driverText: {
+    fontSize: 16,
+    fontWeight: "600",
     marginBottom: 10,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+  colleagueCard: {
     padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginBottom: 10,
+  },
+  colleagueText: {
     fontSize: 16,
-    marginBottom: 20,
+    fontWeight: "bold",
+  },
+  colleagueSubText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  colleagueImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  noMembersText: {
+    fontSize: 14,
+    color: "#999",
+    fontStyle: "italic",
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 50,
+    paddingBottom: 100, // leave room for NavBar
   },
 });

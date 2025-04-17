@@ -78,5 +78,87 @@ namespace Backend.Controllers
 
             return Ok("Party created successfully.");
         }
+        [Authorize]
+        [HttpGet("getUserParties")]
+        public async Task<IActionResult> GetUserParties()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            int parsedUserId = int.Parse(userId);
+
+            // Get all parties created by the user
+            var parties = await _context.Party
+                .Where(p => p.user_id == parsedUserId)
+                .ToListAsync();
+
+            if (!parties.Any())
+            {
+                return NotFound("No parties found.");
+            }
+
+            var partyDTOs = new List<PartyDTO>();
+
+            foreach (var party in parties)
+            {
+                var partyDto = new PartyDTO
+                {
+                    party_id = party.Id,
+                    driver_name = await GetUserName(party.user_id),
+                    user_id = party.user_id,
+                    colleague_list = new List<PartyColleagueDTO>()
+                };
+
+                // Manually fetch party members for this party
+                var members = await _context.Party_Members
+                    .Where(pm => pm.party_id == party.Id)
+                    .ToListAsync();
+
+                foreach (var member in members)
+                {
+                    // Skip the driver if you only want to include colleagues
+                    if (member.user_id == parsedUserId)
+                        continue;
+
+                    var user = await _context.Users.FindAsync(member.user_id);
+                    if (user == null) continue;
+
+                    var userAddresses = await _context.UserAddresses
+                        .FirstOrDefaultAsync(ua => ua.user_id == user.Id);
+
+                    partyDto.colleague_list.Add(new PartyColleagueDTO
+                    {
+                        user_id = user.Id,
+                        user_name = user.Username,
+                        work_address = userAddresses.work_address,
+                        home_address = userAddresses.home_address,
+                        work_coordinates = new CoordinatesDto
+                        {
+                            latitude = userAddresses.work_lat,
+                            longitude = userAddresses.work_lon
+                        },
+                        home_coordinates = new CoordinatesDto
+                        {
+                            latitude = userAddresses.home_lat,
+                            longitude = userAddresses.home_lon
+                        },
+                        image_path = user.ImagePath,
+                    });
+                }
+
+                partyDTOs.Add(partyDto);
+            }
+
+            return Ok(partyDTOs);
+        }
+
+        private async Task<string> GetUserName(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            return user?.Username ?? "Unknown";
+        }
     }
 }
