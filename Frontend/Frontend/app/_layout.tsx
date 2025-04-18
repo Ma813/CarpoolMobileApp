@@ -50,6 +50,14 @@ export default function Layout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="pages/CreateParty"
+        options={{
+          title: "Profile",
+          gestureEnabled: false,
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
