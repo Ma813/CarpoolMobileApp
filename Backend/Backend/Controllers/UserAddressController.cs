@@ -116,15 +116,29 @@ namespace Backend.Controllers
                 a.work_lon >= -180 && a.work_lon <= 180)
                 .ToListAsync();
 
-
             if (colleagues == null || colleagues.Count == 0)
             {
                 return NotFound("No colleagues found with the same work address and valid coordinates");
             }
+            var filteredColleagues = new List<UserAddress>();
+
+            foreach (var colleague in colleagues)
+            {
+                var preference = await _context.User_Preferences.FirstOrDefaultAsync(a => a.user_id == int.Parse(userId) && a.other_user_id == colleague.user_id);
+                if (preference == null || preference.liked != false)
+                {
+                    filteredColleagues.Add(colleague);
+                }
+            }
+
+            if (filteredColleagues == null || filteredColleagues.Count == 0)
+            {
+                filteredColleagues = colleagues;
+            }
 
             // Build coordinates string
             var coordinates = $"{userAddress.home_lon},{userAddress.home_lat}";
-            foreach (var colleague in colleagues)
+            foreach (var colleague in filteredColleagues)
             {
                 coordinates += $";{colleague.home_lon},{colleague.home_lat}";
             }
@@ -143,10 +157,10 @@ namespace Backend.Controllers
 
             var distances = root.GetProperty("distances")[0];
             var result = new List<PartyColleagueDTO>();
-            for (int i = 0; i < colleagues.Count; i++)
+            for (int i = 0; i < filteredColleagues.Count; i++)
             {
                 
-                var c = colleagues[i];
+                var c = filteredColleagues[i];
                 var user = await _context.Users.FindAsync(c.user_id);
                 if (distances[i + 1].GetDouble() < range)
                 {
@@ -170,6 +184,10 @@ namespace Backend.Controllers
                         image_path = user?.ImagePath
                     });
                 }
+            }
+            if(result.Count == 0 || result == null)
+            {
+                return NotFound("No colleagues found in the given range");
             }
 
             return Ok(result);

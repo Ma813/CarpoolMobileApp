@@ -21,6 +21,7 @@ const CreateParty: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false); // State to manage loading
   const [range, setRange] = useState<number>(15000); // State to manage search range
   const invitedColleaguesRef = useRef<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState("No colleagues found.");
 
   const handleGetClosestColleagues = async () => {
     setLoading(true);
@@ -28,9 +29,20 @@ const CreateParty: React.FC = () => {
       const response = await getClosestColleagues(range); // Call the API
       console.log("Closest colleagues:", response); // Log the response for debugging
       setColleagues(response); // Update the state with the results
-    } catch (error) {
-      Alert.alert("Error", "Failed to fetch closest colleagues.");
-      console.error("Error fetching closest colleagues:", error);
+    } catch (error: any) {
+      //Alert.alert("Error", "Failed to fetch closest colleagues.");
+      if (error.response) {
+        console.log(
+          "404 response:",
+          error.response.status,
+          error.response.data
+        );
+        if (error.response.status === 404) {
+          setErrorMessage("No colleagues found within the range of " + range);
+        }
+      } else {
+        console.log("Error fetching closest colleagues:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -50,7 +62,7 @@ const CreateParty: React.FC = () => {
       const response = await api.post("/addresses/setUserPreference", postData);
       console.log("Preference sent successfully:", response.data);
     } catch (error) {
-      console.error("Error sending preference:", error);
+      console.log("Error sending preference:", error);
     }
   };
 
@@ -64,7 +76,7 @@ const CreateParty: React.FC = () => {
       const response = await api.post("/addresses/setUserPreference", postData);
       console.log("Preference sent successfully:", response.data);
     } catch (error) {
-      console.error("Error sending preference:", error);
+      console.log("Error sending preference:", error);
     }
   };
   const router = useRouter();
@@ -90,11 +102,11 @@ const CreateParty: React.FC = () => {
           const response = await api.post("/party/addPartyMember", postData);
           console.log("Colleague invited successfully:", response.data);
         } catch (error) {
-          console.error("Error inviting colleague:", error);
+          console.log("Error inviting colleague:", error);
         }
       }
     } catch (error) {
-      console.error("Error creating party:", error);
+      console.log("Error creating party:", error);
     }
   };
 
@@ -104,7 +116,10 @@ const CreateParty: React.FC = () => {
         <Text style={styles.title}>Party</Text>
         <TouchableOpacity
           style={styles.button}
-          onPress={handleGetClosestColleagues}
+          onPress={() => {
+            Keyboard.dismiss();
+            handleGetClosestColleagues();
+          }}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
@@ -191,7 +206,7 @@ const CreateParty: React.FC = () => {
             }}
           />
         ) : (
-          !loading && <Text style={styles.emptyText}>No colleagues found.</Text>
+          !loading && <Text style={styles.emptyText}>{errorMessage}</Text>
         )}
         <NavBar />
       </View>
