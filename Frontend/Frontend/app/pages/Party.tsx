@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
@@ -25,6 +26,7 @@ const Party: React.FC = () => {
   const [range, setRange] = useState<number>(15000); // State to manage search range
   const invitedColleaguesRef = useRef<any[]>([]);
   const [userParties, setUserParties] = useState<any[]>([]);
+  const router = useRouter();
 
   const GetUserParties = async () => {
     try {
@@ -32,89 +34,13 @@ const Party: React.FC = () => {
       console.log("User parties:", response.data);
       setUserParties(response.data); // Store response in state
     } catch (error) {
-      console.error("Error fetching user parties:", error);
+      console.log("Error fetching user parties:", error);
     }
   };
 
   useEffect(() => {
     GetUserParties();
-  }, []); // Fetch user parties on component mount
-
-  const handleGetClosestColleagues = async () => {
-    setLoading(true);
-    try {
-      const response = await getClosestColleagues(range); // Call the API
-      console.log("Closest colleagues:", response); // Log the response for debugging
-      setColleagues(response); // Update the state with the results
-    } catch (error) {
-      Alert.alert("Error", "Failed to fetch closest colleagues.");
-      console.error("Error fetching closest colleagues:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSwipeRight = async (cardIndex: number) => {
-    const swipedColleague = colleagues[cardIndex];
-
-    invitedColleaguesRef.current.push(swipedColleague); // update ref
-
-    const postData = {
-      other_user_id: swipedColleague.user_id,
-      liked: true,
-    };
-
-    try {
-      const response = await api.post("/addresses/setUserPreference", postData);
-      console.log("Preference sent successfully:", response.data);
-    } catch (error) {
-      console.error("Error sending preference:", error);
-    }
-  };
-
-  const handleSwipeLeft = async (cardIndex: number) => {
-    const swipedColleague = colleagues[cardIndex];
-    const postData = {
-      other_user_id: swipedColleague.user_id,
-      liked: false,
-    };
-    try {
-      const response = await api.post("/addresses/setUserPreference", postData);
-      console.log("Preference sent successfully:", response.data);
-    } catch (error) {
-      console.error("Error sending preference:", error);
-    }
-  };
-  const router = useRouter();
-  const handleSwipedAll = async () => {
-    console.log("All cards swiped");
-    Alert.alert("All cards swiped", "You have swiped all colleagues.", [
-      {
-        text: "OK",
-        onPress: () => router.navigate("/"), // Navigate to the main page
-      },
-    ]);
-    try {
-      const response = await api.post("/party/createParty");
-      console.log("Party sent successfully:", response.data);
-      for (const colleague of invitedColleaguesRef.current) {
-        const postData = {
-          party_id: response.data.id,
-          accepted: false,
-          user_id: colleague.user_id,
-          role: "passenger",
-        };
-        try {
-          const response = await api.post("/party/addPartyMember", postData);
-          console.log("Colleague invited successfully:", response.data);
-        } catch (error) {
-          console.error("Error inviting colleague:", error);
-        }
-      }
-    } catch (error) {
-      console.error("Error creating party:", error);
-    }
-  };
+  }, []);
 
   const openCreatePartyPage = () => {
     router.navigate("/pages/CreateParty");
@@ -151,27 +77,33 @@ const Party: React.FC = () => {
   );
 
   return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Party</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={openCreatePartyPage}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>Create Party</Text>
-        </TouchableOpacity>
-        {userParties.length > 0 ? (
-          <FlatList
-            data={userParties}
-            keyExtractor={(party, index) => index.toString()}
-            renderItem={renderParty}
-            contentContainerStyle={styles.scrollContent}
-          />
-        ) : (
-          <Text style={styles.emptyText}>No parties found.</Text>
-        )}
-        <NavBar />
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Party</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={openCreatePartyPage}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>Create Party</Text>
+      </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#9fbf2a"
+          style={styles.loadingIndicator}
+        />
+      ) : userParties.length > 0 ? (
+        <FlatList
+          data={userParties}
+          keyExtractor={(party, index) => index.toString()}
+          renderItem={renderParty}
+          contentContainerStyle={styles.scrollContent}
+        />
+      ) : (
+        <Text style={styles.emptyText}>No parties found.</Text>
+      )}
+      <NavBar />
+    </View>
   );
 };
 
@@ -256,5 +188,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 50,
     paddingBottom: 100, // leave room for NavBar
+  },
+  loadingIndicator: {
+    marginTop: 20,
   },
 });
