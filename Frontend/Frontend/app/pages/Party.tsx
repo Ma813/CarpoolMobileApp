@@ -11,6 +11,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   ScrollView,
+  FlatList,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
@@ -118,116 +119,60 @@ const Party: React.FC = () => {
   const openCreatePartyPage = () => {
     router.navigate("/pages/CreateParty");
   };
+  const renderColleague = ({ item: colleague }: { item: any }) => (
+    <View style={styles.colleagueCard}>
+      <Text style={styles.colleagueText}>
+        {colleague.user_name} ({colleague.distance} m away)
+      </Text>
+      <Text style={styles.colleagueSubText}>🏠 {colleague.home_address}</Text>
+      {colleague.image_path ? (
+        <Image
+          source={{ uri: colleague.image_path }}
+          style={styles.colleagueImage}
+        />
+      ) : null}
+    </View>
+  );
+
+  const renderParty = ({ item: party }: { item: any }) => (
+    <View style={styles.partyCard}>
+      <Text style={styles.partyTitle}>Party #{party.party_id}</Text>
+      <Text style={styles.driverText}>Driver: {party.driver_name}</Text>
+      {party.colleague_list.length > 0 ? (
+        <FlatList
+          data={party.colleague_list}
+          keyExtractor={(colleague, idx) => idx.toString()}
+          renderItem={renderColleague}
+        />
+      ) : (
+        <Text style={styles.noMembersText}>No members in this party.</Text>
+      )}
+    </View>
+  );
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView style={styles.container}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+      <View style={styles.container}>
+        <Text style={styles.title}>Party</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={openCreatePartyPage}
+          disabled={loading}
         >
-          <Text style={styles.title}>Party</Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={openCreatePartyPage}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Create Party</Text>
-          </TouchableOpacity>
-          {userParties.length > 0 ? (
-            userParties.map((party, index) => (
-              <View key={index} style={styles.partyCard}>
-                <Text style={styles.partyTitle}>Party #{party.party_id}</Text>
-                <Text style={styles.driverText}>
-                  Driver: {party.driver_name}
-                </Text>
-
-                {party.colleague_list.length > 0 ? (
-                  party.colleague_list.map(
-                    (
-                      colleague: {
-                        user_name:
-                          | string
-                          | number
-                          | boolean
-                          | React.ReactElement<
-                              any,
-                              string | React.JSXElementConstructor<any>
-                            >
-                          | Iterable<React.ReactNode>
-                          | React.ReactPortal
-                          | null
-                          | undefined;
-                        distance:
-                          | string
-                          | number
-                          | boolean
-                          | React.ReactElement<
-                              any,
-                              string | React.JSXElementConstructor<any>
-                            >
-                          | Iterable<React.ReactNode>
-                          | React.ReactPortal
-                          | null
-                          | undefined;
-                        home_address:
-                          | string
-                          | number
-                          | boolean
-                          | React.ReactElement<
-                              any,
-                              string | React.JSXElementConstructor<any>
-                            >
-                          | Iterable<React.ReactNode>
-                          | React.ReactPortal
-                          | null
-                          | undefined;
-                        work_address:
-                          | string
-                          | number
-                          | boolean
-                          | React.ReactElement<
-                              any,
-                              string | React.JSXElementConstructor<any>
-                            >
-                          | Iterable<React.ReactNode>
-                          | React.ReactPortal
-                          | null
-                          | undefined;
-                        image_path: any;
-                      },
-                      idx: React.Key | null | undefined
-                    ) => (
-                      <View key={idx} style={styles.colleagueCard}>
-                        <Text style={styles.colleagueText}>
-                          {colleague.user_name} ({colleague.distance} m away)
-                        </Text>
-                        <Text style={styles.colleagueSubText}>
-                          🏠 {colleague.home_address}
-                        </Text>
-                        {colleague.image_path ? (
-                          <Image
-                            source={{ uri: colleague.image_path }}
-                            style={styles.colleagueImage}
-                          />
-                        ) : null}
-                      </View>
-                    )
-                  )
-                ) : (
-                  <Text style={styles.noMembersText}>
-                    No members in this party.
-                  </Text>
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No parties found.</Text>
-          )}
-        </ScrollView>
-
+          <Text style={styles.buttonText}>Create Party</Text>
+        </TouchableOpacity>
+        {userParties.length > 0 ? (
+          <FlatList
+            data={userParties}
+            keyExtractor={(party, index) => index.toString()}
+            renderItem={renderParty}
+            contentContainerStyle={styles.scrollContent}
+          />
+        ) : (
+          <Text style={styles.emptyText}>No parties found.</Text>
+        )}
         <NavBar />
-      </ScrollView>
+      </View>
     </TouchableWithoutFeedback>
   );
 };
