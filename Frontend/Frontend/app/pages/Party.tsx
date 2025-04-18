@@ -151,7 +151,6 @@ const Party: React.FC = () => {
   );
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
         <Text style={styles.title}>Party</Text>
         <TouchableOpacity
@@ -173,7 +172,6 @@ const Party: React.FC = () => {
         )}
         <NavBar />
       </View>
-    </TouchableWithoutFeedback>
   );
 };
 
