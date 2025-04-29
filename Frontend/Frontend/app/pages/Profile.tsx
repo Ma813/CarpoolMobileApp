@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import CarSelect from './CarSelect';
 import UserWorkTimesPage from './UserWorkTime';
 import Addresses from './Addresses';
@@ -24,7 +24,34 @@ const Profile: React.FC = () => {
                 renderItem={({ item }) => (
                     <View style={styles.section}>
                         <Ionicons name={item.icon as "car-sport" | "location" | "time"} size={28} color="#333" />
-                        <Text style={styles.subHeader}>{item.title}</Text>
+                        {item.title === "Addresses" ? (
+                            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                                <Text style={styles.subHeader}>{item.title}</Text>
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        Alert.alert(
+                                            "Privacy Tip",
+                                            "Use a nearby public place if you prefer not to share your actual addresses."
+                                        )
+                                    }
+                                    style={{
+                                        marginBottom: 10,
+                                        marginLeft: 10,
+                                        backgroundColor: "#9fbf2a",
+                                        borderRadius: 50,
+                                        width: 24,
+                                        height: 24,
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <Text style={{ color: "white", fontWeight: "bold" }}>?</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <Text style={styles.subHeader}>{item.title}</Text>
+                        )}
+
                         {item.component}
                     </View>
                 )}
@@ -50,6 +77,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     subHeader: {
+        
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 10,
