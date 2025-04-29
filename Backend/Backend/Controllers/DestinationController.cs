@@ -87,7 +87,7 @@ namespace Backend.Controllers
             }
 
             var userCar = await _context.Cars.FirstOrDefaultAsync(c => c.user_id == user.Id);
-            if (userCar == null || userCar.fuel_efficiency == null || userCar.fuel_type == null ||
+            if (destinationDto.mode_of_transport != "car" || userCar == null || userCar.fuel_efficiency == null || userCar.fuel_type == null ||
             userCar.fuel_efficiency == null || userCar.fuel_efficiency <= 0
             || (userCar.fuel_type != "Petrol" && userCar.fuel_type != "Diesel"))
             {
@@ -101,7 +101,7 @@ namespace Backend.Controllers
                 destination.default_car = false;
             }
 
-
+            destination.mode_of_transport = destinationDto.mode_of_transport;
 
             _context.Destinations.Add(destination);
             await _context.SaveChangesAsync();

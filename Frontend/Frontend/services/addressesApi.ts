@@ -11,10 +11,11 @@ export type Addresses = {
 export type Trip = {
   start_latitude?: number;
   start_longitude?: number;
-
   destination: string;
   destination_latitude?: number;
   destination_longitude?: number;
+
+  mode_of_transport?: string;
 };
 
 const CONTROLLER_NAME = "addresses";

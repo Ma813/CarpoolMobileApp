@@ -13,5 +13,6 @@ namespace Backend.Models
         public int user_id { get; set; }
         public double? co2_emission { get; set; }
         public bool? default_car { get; set; }
+        public string? mode_of_transport { get; set; }
     }
 }

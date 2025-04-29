@@ -25,6 +25,8 @@ import {
   Trip,
 } from "@/services/addressesApi";
 import { fetchOptimalPickup } from "@/services/addressesApi";
+import { getModeOfTransport } from "@/services/modeOfTransportApi";
+import { Ionicons } from "@expo/vector-icons";
 const Map = () => {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [currentLocation, setCurrentLocation] = useState<{
@@ -47,6 +49,14 @@ const Map = () => {
     latitude: number;
     longitude: number;
   } | null>(null); // Dynamic marker
+
+  const [selectedMode, setSelectedMode] = React.useState<string>('car');
+  const transportOptions: { key: string; icon: 'car-outline' | 'walk-outline' | 'bicycle-outline' | 'bus-outline' }[] = [
+    { key: 'car', icon: 'car-outline' },
+    { key: 'walk', icon: 'walk-outline' },
+    { key: 'bicycle', icon: 'bicycle-outline' },
+    { key: 'bus', icon: 'bus-outline' },
+  ];
 
   const [pickupPoints, setPickupPoints] = useState<
     { latitude: number; longitude: number; order: number }[]
@@ -132,12 +142,30 @@ const Map = () => {
 
   useEffect(() => {
     fetchCurrentLocation(); // Fetch the current location when the component mounts
+    getModeOfTransport()
+      .then((mode) => {
+        setSelectedMode(mode);
+      }
+      )
+      .catch((error) => {
+        console.log("Error fetching mode of transport:", error);
+        setSelectedMode("car"); // Default to 'car' if there's an error
+      }
+      );
   }, []);
 
   useEffect(() => {
     fetchCurrentLocation(); // Fetch the current location when the component mounts
     fetchRoute();
-  }, [destination]); // Fetch the route when the destination changes
+  }, [destination]); // Fetch the route when the destinatio changes
+
+  useEffect(() => {
+    fetchCurrentLocation();
+    fetchRoute(); // Fetch the route when the selected mode changes
+    if (destination) {
+      handleGoPress();
+    }
+  }, [selectedMode]);
 
   useEffect(() => {
     if (pickupPoints.length > 0) {
@@ -172,12 +200,19 @@ const Map = () => {
     if (!destination) return; // Skip if no destination is set
     console.log("Fetching route to destination:", destination);
 
+    var profile = "driving";
+    if (selectedMode === "bicycle") {
+      profile = "cycling";
+    } else if (selectedMode === "walk") {
+      profile = "walking";
+    } else if (selectedMode === "bus") {
+      profile = "driving"; // Use driving for bus for now
+    }
+
     const accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN; // Replace with your Mapbox token
-    const origin = currentLocation || {
-      latitude: 54.8923288,
-      longitude: 23.9225799,
-    }; // Use current location as origin
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${accessToken}&overview=full`;
+    const origin = currentLocation || { latitude: 54.8923288, longitude: 23.9225799 }; // Use current location as origin
+    const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${accessToken}`;
+
 
     try {
       const response = await fetch(url);
@@ -223,6 +258,7 @@ const Map = () => {
 
   const handleGoPress = async () => {
     setMarker(null); // Clear the marker when "GO" is pressed
+    setPickupPoints([]); // Clear pickup points when "GO" is pressed
     console.log("Go to address:", selectedSuggestion?.place_name);
     if (selectedSuggestion) {
       try {
@@ -237,6 +273,7 @@ const Map = () => {
           destination: selectedSuggestion.place_name,
           destination_latitude: selectedSuggestion.latitude,
           destination_longitude: selectedSuggestion.longitude,
+          mode_of_transport: selectedMode,
         };
 
         const response = await postDestination(trip); // Save the custom marker as a destination
@@ -251,54 +288,67 @@ const Map = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <View style={styles.navBarContainer}>
-          <NavBar />
-        </View>
-        <View style={styles.searchContainer}>
-          <TextInput
-            placeholder="Search..."
-            placeholderTextColor="#999"
-            value={query}
-            onChangeText={(text) => {
-              setQuery(text);
-              if (text.length > 0) {
-                fetchAddresses(text).then(setSuggestions);
-              } else {
-                setSuggestions(recentAddresses);
-              }
-            }}
-            onFocus={() => {
-              if (!query) setSuggestions(recentAddresses);
-            }}
-            style={styles.input}
-          />
-          <TouchableOpacity style={styles.button} onPress={handleGoPress}>
-            <Text style={styles.buttonText}>GO</Text>
+    <View style={styles.container}>
+      <View style={styles.navBarContainer}>
+        <NavBar />
+      </View>
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search..."
+          placeholderTextColor="#999"
+          value={query}
+          onChangeText={(text) => {
+            setQuery(text);
+            if (text.length > 0) {
+              fetchAddresses(text).then(setSuggestions);
+            } else {
+              setSuggestions(recentAddresses);
+            }
+          }}
+          onFocus={() => {
+            if (!query) setSuggestions(recentAddresses);
+
+          }}
+          style={styles.input}
+        />
+        <TouchableOpacity style={styles.button} onPress={handleGoPress}>
+          <Text style={styles.buttonText}>GO</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleShowPickups}>
+          <Text style={styles.buttonText}>Show Pickups</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.containerSelect}>
+        {transportOptions.map(option => (
+          <TouchableOpacity
+            key={option.key}
+            style={[styles.buttonSelect, selectedMode === option.key && styles.selectedButton]}
+            onPress={() => setSelectedMode(option.key)}
+          >
+            <Ionicons name={option.icon} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleShowPickups}>
-            <Text style={styles.buttonText}>Show Pickups</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ backgroundColor: "white", maxHeight: 200 }}>
-          <FlatList
-            data={suggestions}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.suggestionItem}
-                onPress={() => {
-                  setSelectedSuggestion(item);
-                  setSuggestions([]);
-                  setQuery(item.place_name);
-                }}
-              >
-                <Text>{item.place_name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        ))}
+      </View>
+
+      <View style={{ backgroundColor: "white", maxHeight: 200 }}>
+        <FlatList
+          data={suggestions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.suggestionItem}
+              onPress={() => {
+                setSelectedSuggestion(item);
+                setSuggestions([]);
+                setQuery(item.place_name);
+              }}
+            >
+              <Text>{item.place_name}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
 
         {CO2 && (
           <View
@@ -445,5 +495,28 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
+  },
+  buttonSelect: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#d3d3d3',
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    marginHorizontal: 5,
+  },
+  selectedButton: {
+    backgroundColor: '#9fbf2a',
+  },
+  label: {
+    marginTop: 5,
+    fontSize: 14,
+  },
+  containerSelect: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    padding: 10,
   },
 });
