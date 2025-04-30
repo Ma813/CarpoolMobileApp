@@ -1,10 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, View, Alert, TextInput, FlatList, TouchableOpacity, Text, Button } from "react-native";
+import React, { ReactNode, useEffect, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Alert,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  Button,
+} from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
-import { fetchAddresses, getAddressFromCoordinates, Suggestion } from "@/services/mapbox";
+import {
+  fetchAddresses,
+  getAddressFromCoordinates,
+  Suggestion,
+} from "@/services/mapbox";
 import { NavBar } from "../components/NavBar";
-import { getLastAddresses, postDestination, Trip } from "@/services/addressesApi";
+import {
+  getLastAddresses,
+  postDestination,
+  Trip,
+} from "@/services/addressesApi";
 import { fetchOptimalPickup } from "@/services/addressesApi";
 import { getModeOfTransport } from "@/services/modeOfTransportApi";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +40,8 @@ const Map = () => {
 
   const [query, setQuery] = useState<string>("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] =
+    useState<Suggestion | null>(null);
   const [recentAddresses, setRecentAddresses] = useState<Suggestion[]>([]); // State to store recent addresses
   const [CO2, setCO2] = useState<number | null>(null); // State to store CO2 emissions
   const [carDefault, setCarDefault] = useState<Boolean>(true); // State to store car default
@@ -32,16 +50,31 @@ const Map = () => {
     longitude: number;
   } | null>(null); // Dynamic marker
 
-  const [selectedMode, setSelectedMode] = React.useState<string>('car');
-  const transportOptions: { key: string; icon: 'car-outline' | 'walk-outline' | 'bicycle-outline' | 'bus-outline' }[] = [
-    { key: 'car', icon: 'car-outline' },
-    { key: 'walk', icon: 'walk-outline' },
-    { key: 'bicycle', icon: 'bicycle-outline' },
-    { key: 'bus', icon: 'bus-outline' },
+  const [selectedMode, setSelectedMode] = React.useState<string>("car");
+  const transportOptions: {
+    key: string;
+    icon: "car-outline" | "walk-outline" | "bicycle-outline" | "bus-outline";
+  }[] = [
+    { key: "car", icon: "car-outline" },
+    { key: "walk", icon: "walk-outline" },
+    { key: "bicycle", icon: "bicycle-outline" },
+    { key: "bus", icon: "bus-outline" },
   ];
 
   const [pickupPoints, setPickupPoints] = useState<
     { latitude: number; longitude: number; order: number }[]
+  >([]);
+  const [transitDetails, setTransitDetails] = useState<
+    {
+      type: string;
+      instructions: ReactNode;
+      distance: ReactNode;
+      duration: ReactNode;
+      from: string;
+      to: string;
+      bus: string;
+      departureTime: string;
+    }[]
   >([]);
 
   const handleShowPickups = async () => {
@@ -69,10 +102,15 @@ const Map = () => {
 
     const accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
     const allPoints = [
-      { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+      {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      },
       ...pickupPoints.sort((a, b) => a.order - b.order),
     ];
-    const coordinatesStr = allPoints.map(p => `${p.longitude},${p.latitude}`).join(";");
+    const coordinatesStr = allPoints
+      .map((p) => `${p.longitude},${p.latitude}`)
+      .join(";");
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesStr}?geometries=geojson&access_token=${accessToken}&overview=full`;
 
     try {
@@ -94,9 +132,6 @@ const Map = () => {
           });
         }
       }
-
-      
-
     } catch (error) {
       console.error("Error fetching pickup route:", error);
     }
@@ -137,13 +172,11 @@ const Map = () => {
     getModeOfTransport()
       .then((mode) => {
         setSelectedMode(mode);
-      }
-      )
+      })
       .catch((error) => {
         console.log("Error fetching mode of transport:", error);
         setSelectedMode("car"); // Default to 'car' if there's an error
-      }
-      );
+      });
   }, []);
 
   useEffect(() => {
@@ -166,29 +199,150 @@ const Map = () => {
   }, [pickupPoints]);
 
   useEffect(() => {
-    getLastAddresses().then((data) => {
-      if (!data || !Array.isArray(data)) {
-        console.error("Blogas duomenų formatas iš API", data);
-        return;
-      }
+    getLastAddresses()
+      .then((data) => {
+        if (!data || !Array.isArray(data)) {
+          console.error("Blogas duomenų formatas iš API", data);
+          return;
+        }
 
-      const suggestions = data.map((d: any) => ({
-        id: d.id?.toString() ?? Math.random().toString(),
-        place_name: d.place_name ?? "Unknown place",
-        latitude: d.latitude ?? 0,
-        longitude: d.longitude ?? 0 // čia konvertuoju į teisingą lauką
-      }));
+        const suggestions = data.map((d: any) => ({
+          id: d.id?.toString() ?? Math.random().toString(),
+          place_name: d.place_name ?? "Unknown place",
+          latitude: d.latitude ?? 0,
+          longitude: d.longitude ?? 0, // čia konvertuoju į teisingą lauką
+        }));
 
-      setRecentAddresses(suggestions);
-      console.log("Gauti recentAddresses:", suggestions);
-    }).catch(err => {
-      console.error("Klaida gaunant paskutinius adresus:", err);
-    });
+        setRecentAddresses(suggestions);
+        console.log("Gauti recentAddresses:", suggestions);
+      })
+      .catch((err) => {
+        console.error("Klaida gaunant paskutinius adresus:", err);
+      });
   }, []);
+  function decodePolyline(
+    encoded: string
+  ): { latitude: number; longitude: number }[] {
+    let points = [];
+    let index = 0,
+      len = encoded.length;
+    let lat = 0,
+      lng = 0;
+
+    while (index < len) {
+      let b,
+        shift = 0,
+        result = 0;
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      const deltaLat = result & 1 ? ~(result >> 1) : result >> 1;
+      lat += deltaLat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      const deltaLng = result & 1 ? ~(result >> 1) : result >> 1;
+      lng += deltaLng;
+
+      points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+    }
+
+    return points;
+  }
 
   const fetchRoute = async () => {
     if (!destination) return; // Skip if no destination is set
     console.log("Fetching route to destination:", destination);
+    if (!currentLocation) return; // Skip if no current location is set
+
+    if (selectedMode === "bus") {
+      const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
+      const dest = `${destination.latitude},${destination.longitude}`;
+      const departureTime = Math.floor(Date.now() / 1000) + 86400; // Now + 1 day = tomorrow
+      const googleApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&mode=transit&transit_mode=bus&departure_time=${departureTime}&key=${googleApiKey}`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.routes.length) {
+          const steps = data.routes[0].legs[0].steps;
+          const coordinates = steps.flatMap(
+            (step: { polyline: { points: string } }) => {
+              if (step.polyline && step.polyline.points) {
+                return decodePolyline(step.polyline.points);
+              }
+              return [];
+            }
+          );
+          const transitInfo = steps
+            .map(
+              (step: {
+                travel_mode: string;
+                html_instructions: any;
+                distance: { text: any };
+                duration: { text: any };
+                transit_details: {
+                  departure_stop: any;
+                  arrival_stop: any;
+                  line: any;
+                  departure_time: any;
+                };
+              }) => {
+                if (step.travel_mode === "WALKING") {
+                  return {
+                    type: "walk",
+                    instructions: step.html_instructions,
+                    distance: step.distance.text,
+                    duration: step.duration.text,
+                  };
+                }
+
+                if (step.travel_mode === "TRANSIT" && step.transit_details) {
+                  const { departure_stop, arrival_stop, line, departure_time } =
+                    step.transit_details;
+                  return {
+                    type: "bus",
+                    from: departure_stop.name,
+                    to: arrival_stop.name,
+                    bus: line.short_name || line.name,
+                    departureTime: departure_time.text,
+                  };
+                }
+
+                return null;
+              }
+            )
+            .filter(Boolean);
+          setTransitDetails(transitInfo);
+
+          console.log("🚌 Transit info:", transitInfo);
+
+          setRouteCoordinates(coordinates);
+
+          if (coordinates.length && mapRef.current) {
+            mapRef.current.fitToCoordinates(coordinates, {
+              edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+              animated: true,
+            });
+          }
+        } else {
+          console.warn("No routes found in Google response");
+        }
+      } catch (error) {
+        console.error("Google API error:", error);
+      }
+
+      return; // Skip Mapbox route fetch below
+    }
 
     var profile = "driving";
     if (selectedMode === "bicycle") {
@@ -200,7 +354,10 @@ const Map = () => {
     }
 
     const accessToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN; // Replace with your Mapbox token
-    const origin = currentLocation || { latitude: 54.8923288, longitude: 23.9225799 }; // Use current location as origin
+    const origin = currentLocation || {
+      latitude: 54.8923288,
+      longitude: 23.9225799,
+    }; // Use current location as origin
     const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?geometries=geojson&access_token=${accessToken}`;
 
     try {
@@ -239,8 +396,7 @@ const Map = () => {
     setCarDefault(true); // Reset car default when a new marker is placed
 
     const address = await getAddressFromCoordinates(latitude, longitude);
-    const selected =
-    {
+    const selected = {
       id: "",
       place_name: address ?? "Custom marker",
       longitude: longitude,
@@ -258,7 +414,10 @@ const Map = () => {
     console.log("Go to address:", selectedSuggestion?.place_name);
     if (selectedSuggestion) {
       try {
-        setDestination({ latitude: selectedSuggestion.latitude ?? 56, longitude: selectedSuggestion.longitude ?? 24 });
+        setDestination({
+          latitude: selectedSuggestion.latitude ?? 56,
+          longitude: selectedSuggestion.longitude ?? 24,
+        });
 
         const trip = {
           start_latitude: currentLocation?.latitude,
@@ -269,11 +428,9 @@ const Map = () => {
           mode_of_transport: selectedMode,
         };
 
-
         const response = await postDestination(trip); // Save the custom marker as a destination
         setCO2(response.co2_emission); // Set CO2 emissions from the response
         setCarDefault(response.default_car);
-
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -324,10 +481,13 @@ const Map = () => {
       </View>
 
       <View style={styles.containerSelect}>
-        {transportOptions.map(option => (
+        {transportOptions.map((option) => (
           <TouchableOpacity
             key={option.key}
-            style={[styles.buttonSelect, selectedMode === option.key && styles.selectedButton]}
+            style={[
+              styles.buttonSelect,
+              selectedMode === option.key && styles.selectedButton,
+            ]}
             onPress={() => setSelectedMode(option.key)}
           >
             <Ionicons name={option.icon} size={20} />
@@ -355,7 +515,14 @@ const Map = () => {
       </View>
 
       {CO2 && (
-        <View style={{ padding: 10, backgroundColor: "white", flexDirection: "row", alignItems: "center" }}>
+        <View
+          style={{
+            padding: 10,
+            backgroundColor: "white",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
           <Text style={{ fontSize: 16, fontWeight: "bold" }}>
             CO2 Emissions for trip: {CO2.toFixed(2)} kg
           </Text>
@@ -364,9 +531,9 @@ const Map = () => {
               Alert.alert(
                 "CO2 Emissions Info",
                 `This value represents the estimated CO2 emissions for the trip based on the selected route.\n\n` +
-                (carDefault
-                  ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
-                  : "The calculation is based on your car.")
+                  (carDefault
+                    ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
+                    : "The calculation is based on your car.")
               )
             }
             style={{
@@ -383,7 +550,32 @@ const Map = () => {
           </TouchableOpacity>
         </View>
       )}
-
+      {selectedMode === "bus" && transitDetails.length > 0 && (
+        <View style={{ padding: 10, backgroundColor: "white" }}>
+          <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 5 }}>
+            Transit Instructions:
+          </Text>
+          {transitDetails.map((info, index) => (
+            <View key={index} style={{ marginBottom: 8 }}>
+              {info.type === "bus" ? (
+                <>
+                  <Text>🕐 Departure: {info.departureTime}</Text>
+                  <Text>🚏 From: {info.from}</Text>
+                  <Text>🚌 Bus: {info.bus}</Text>
+                  <Text>➡️ To: {info.to}</Text>
+                </>
+              ) : (
+                <>
+                  <Text>🚶 Walk: {info.instructions}</Text>
+                  <Text>
+                    🗺 Distance: {info.distance} ({info.duration})
+                  </Text>
+                </>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -414,13 +606,15 @@ const Map = () => {
         {pickupPoints.map((point) => (
           <Marker
             key={point.order}
-            coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+            coordinate={{
+              latitude: point.latitude,
+              longitude: point.longitude,
+            }}
             title={`Pickup #${point.order + 1}`}
             description={`Latitude: ${point.latitude}, Longitude: ${point.longitude}`}
             pinColor="green"
           />
         ))}
-
       </MapView>
     </View>
   );
@@ -477,25 +671,25 @@ const styles = StyleSheet.create({
   },
   buttonSelect: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#d3d3d3',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#d3d3d3",
     borderRadius: 10,
     paddingVertical: 5,
     paddingHorizontal: 5,
     marginHorizontal: 5,
   },
   selectedButton: {
-    backgroundColor: '#9fbf2a',
+    backgroundColor: "#9fbf2a",
   },
   label: {
     marginTop: 5,
     fontSize: 14,
   },
   containerSelect: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
     padding: 10,
   },
 });
