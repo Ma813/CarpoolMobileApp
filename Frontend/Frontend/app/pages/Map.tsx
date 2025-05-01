@@ -55,11 +55,11 @@ const Map = () => {
     key: string;
     icon: "car-outline" | "walk-outline" | "bicycle-outline" | "bus-outline";
   }[] = [
-    { key: "car", icon: "car-outline" },
-    { key: "walk", icon: "walk-outline" },
-    { key: "bicycle", icon: "bicycle-outline" },
-    { key: "bus", icon: "bus-outline" },
-  ];
+      { key: "car", icon: "car-outline" },
+      { key: "walk", icon: "walk-outline" },
+      { key: "bicycle", icon: "bicycle-outline" },
+      { key: "bus", icon: "bus-outline" },
+    ];
 
   const [pickupPoints, setPickupPoints] = useState<
     { latitude: number; longitude: number; order: number }[]
@@ -76,6 +76,8 @@ const Map = () => {
       departureTime: string;
     }[]
   >([]);
+
+  const [infoIndex, setInfoIndex] = useState<number>(0); // State to track the index of the info to be displayed
 
   const handleShowPickups = async () => {
     if (!currentLocation) return;
@@ -409,6 +411,7 @@ const Map = () => {
   };
 
   const handleGoPress = async () => {
+    setInfoIndex(0); // Reset info index when "GO" is pressed
     setMarker(null); // Clear the marker when "GO" is pressed
     setPickupPoints([]); // Clear pickup points when "GO" is pressed
     console.log("Go to address:", selectedSuggestion?.place_name);
@@ -442,11 +445,11 @@ const Map = () => {
   // Insert logic for defaultRegion before return
   const defaultRegion = currentLocation
     ? {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    }
     : undefined;
 
   return (
@@ -531,9 +534,9 @@ const Map = () => {
               Alert.alert(
                 "CO2 Emissions Info",
                 `This value represents the estimated CO2 emissions for the trip based on the selected route.\n\n` +
-                  (carDefault
-                    ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
-                    : "The calculation is based on your car.")
+                (carDefault
+                  ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
+                  : "The calculation is based on your car.")
               )
             }
             style={{
@@ -555,25 +558,80 @@ const Map = () => {
           <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 5 }}>
             Transit Instructions:
           </Text>
-          {transitDetails.map((info, index) => (
-            <View key={index} style={{ marginBottom: 8 }}>
-              {info.type === "bus" ? (
-                <>
-                  <Text>🕐 Departure: {info.departureTime}</Text>
-                  <Text>🚏 From: {info.from}</Text>
-                  <Text>🚌 Bus: {info.bus}</Text>
-                  <Text>➡️ To: {info.to}</Text>
-                </>
-              ) : (
-                <>
-                  <Text>🚶 Walk: {info.instructions}</Text>
-                  <Text>
-                    🗺 Distance: {info.distance} ({info.duration})
-                  </Text>
-                </>
-              )}
+          <View style={{ marginBottom: 8 }}>
+            {transitDetails[infoIndex].type === "bus" ? (
+              <>
+                <Text>🕐 Departure: {transitDetails[infoIndex].departureTime}</Text>
+                <Text>🚏 From: {transitDetails[infoIndex].from}</Text>
+                <Text>🚌 Bus: {transitDetails[infoIndex].bus}</Text>
+                <Text>➡️ To: {transitDetails[infoIndex].to}</Text>
+              </>
+            ) : (
+              <>
+                <Text>🚶 Walk: {transitDetails[infoIndex].instructions}</Text>
+                <Text>
+                  🗺 Distance: {transitDetails[infoIndex].distance} ({transitDetails[0].duration})
+                </Text>
+              </>
+            )}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 10,
+              }}>
+              {infoIndex != 0 && <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "#9fbf2a",
+                  borderRadius: 5,
+                  padding: 5,
+                  margin: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setInfoIndex((prevIndex) =>
+                    prevIndex === 0 ? 0 : prevIndex - 1
+                  );
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>Previous</Text>
+              </TouchableOpacity>}
+
+              <Text
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  margin: 10,
+                }}>
+                {infoIndex + 1} / {transitDetails.length}
+              </Text>
+              {transitDetails && infoIndex < transitDetails.length - 1 && <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "#9fbf2a",
+                  borderRadius: 5,
+                  padding: 5,
+                  margin: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setInfoIndex((prevIndex) =>
+                    prevIndex === transitDetails.length - 1 ? prevIndex : prevIndex + 1
+                  );
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>Next</Text>
+              </TouchableOpacity>}
             </View>
-          ))}
+
+          </View>
         </View>
       )}
       <MapView
