@@ -78,6 +78,13 @@ const Map = () => {
   >([]);
 
   const [infoIndex, setInfoIndex] = useState<number>(0); // State to track the index of the info to be displayed
+  const [busPolyline, setBusPolyline] = useState<
+    { latitude: number; longitude: number }[]
+  >([]); // State to store bus route polyline
+
+  const [busLineIndexes, setBusLineIndexes] = useState<number[]>([]); // State to store bus line indexes
+
+  const [busStops, setBusStops] = useState<string[]>([]); // State to store bus stops
 
   const handleShowPickups = async () => {
     if (!currentLocation) return;
@@ -87,6 +94,10 @@ const Map = () => {
     setMarker(null); // Clear the marker when "Show Pickups" is pressed
     setDestination(null); // Clear the destination when "Show Pickups" is pressed
     setCO2(null); // Reset CO2 emissions when "Show Pickups" is pressed
+    setBusLineIndexes([]); // Clear bus line indexes when "Show Pickups" is pressed
+    setBusPolyline([]); // Clear bus polyline when "Show Pickups" is pressed
+    setTransitDetails([]); // Clear transit details when "Show Pickups" is pressed
+    setInfoIndex(0); // Reset info index when "Show Pickups" is pressed
 
     try {
       const data = await fetchOptimalPickup();
@@ -187,6 +198,9 @@ const Map = () => {
   }, [destination]); // Fetch the route when the destinatio changes
 
   useEffect(() => {
+    setPickupPoints([]); // Clear pickup points when the selected mode changes
+    setBusPolyline([]); // Clear bus polyline when the selected mode changes
+    setRouteCoordinates([]); // Clear route coordinates when the selected mode changes
     fetchCurrentLocation();
     fetchRoute(); // Fetch the route when the selected mode changes
     if (destination) {
@@ -260,6 +274,7 @@ const Map = () => {
   }
 
   const fetchRoute = async () => {
+    setPickupPoints([]); // Clear pickup points when fetching a new route
     if (!destination) return; // Skip if no destination is set
     console.log("Fetching route to destination:", destination);
     if (!currentLocation) return; // Skip if no current location is set
@@ -275,67 +290,109 @@ const Map = () => {
         const response = await fetch(url);
         const data = await response.json();
 
+
         if (data.routes.length) {
-          const steps = data.routes[0].legs[0].steps;
-          const coordinates = steps.flatMap(
-            (step: { polyline: { points: string } }) => {
-              if (step.polyline && step.polyline.points) {
-                return decodePolyline(step.polyline.points);
+          //This turns the code into a clusterfuck
+          // We could just setBusLineIndexes([]) but it is synchronous and ususally
+          // causes the map to not update properly
+          //Sorry if this makes the code hard to read
+          setBusLineIndexes(() => {
+            busLineIndexes.length = 0; // Clear bus line indexes
+            console.log(busLineIndexes);
+            const steps = data.routes[0].legs[0].steps;
+            const coordinates = steps.flatMap(
+              (step: { polyline: { points: string } }) => {
+                if (step.polyline && step.polyline.points) {
+                  const decodedPolyline = decodePolyline(step.polyline.points);
+                  if (busLineIndexes.length === 0) {
+                    busLineIndexes.push(0);
+                  }
+                  busLineIndexes.push(busLineIndexes[busLineIndexes.length - 1] + decodedPolyline.length);
+                  setBusLineIndexes(busLineIndexes);
+                  console.log("Bus line indexes:", busLineIndexes);
+                  return decodedPolyline;
+                }
+                return [];
               }
-              return [];
+            );
+            setBusPolyline(coordinates);
+            setBusStops([]); // Clear bus stops when fetching a new route
+            var skip = true;
+            const transitInfo = steps
+              .map(
+                (step: {
+                  travel_mode: string;
+                  html_instructions: any;
+                  distance: { text: any };
+                  duration: { text: any };
+                  transit_details: {
+                    departure_stop: any;
+                    arrival_stop: any;
+                    line: any;
+                    departure_time: any;
+                  };
+                }) => {
+                  if (step.travel_mode === "WALKING") {
+                    skip = false;
+                    return {
+                      type: "walk",
+                      instructions: step.html_instructions,
+                      distance: step.distance.text,
+                      duration: step.duration.text,
+                    };
+                  }
+
+                  if (step.travel_mode === "TRANSIT" && step.transit_details) {
+                    const { departure_stop, arrival_stop, line, departure_time } =
+                      step.transit_details;
+                    const busStop1 = departure_stop.name;
+                    const busStop2 = arrival_stop.name;
+                    if (!skip)
+                      setBusStops((prevStops) => [...prevStops, busStop1]);
+                    setBusStops((prevStops) => [...prevStops, busStop2]);
+                    console.log("Bus stops:", busStops);
+                    skip = true;
+                    return {
+                      type: "bus",
+                      from: departure_stop.name,
+                      to: arrival_stop.name,
+                      bus: line.short_name || line.name,
+                      departureTime: departure_time.text,
+                    };
+                  }
+
+                  return null;
+                }
+              )
+              .filter(Boolean);
+            setTransitDetails(transitInfo);
+
+            console.log("🚌 Transit info:", transitInfo);
+
+            setRouteCoordinates(coordinates);
+
+            if (coordinates.length && mapRef.current) {
+              if (coordinates.length && mapRef.current) {
+                if (selectedMode !== "bus") {
+                  mapRef.current.fitToCoordinates(coordinates, {
+                    edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                    animated: true,
+                  });
+                }
+                if (selectedMode === "bus" && busPolyline.length > 0) {
+                  mapRef.current && mapRef.current.fitToCoordinates(busPolyline.slice(busLineIndexes[infoIndex], busLineIndexes[infoIndex + 1] + 1), {
+                    edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                    animated: true,
+                  });
+                }
+              }
             }
-          );
-          const transitInfo = steps
-            .map(
-              (step: {
-                travel_mode: string;
-                html_instructions: any;
-                distance: { text: any };
-                duration: { text: any };
-                transit_details: {
-                  departure_stop: any;
-                  arrival_stop: any;
-                  line: any;
-                  departure_time: any;
-                };
-              }) => {
-                if (step.travel_mode === "WALKING") {
-                  return {
-                    type: "walk",
-                    instructions: step.html_instructions,
-                    distance: step.distance.text,
-                    duration: step.duration.text,
-                  };
-                }
 
-                if (step.travel_mode === "TRANSIT" && step.transit_details) {
-                  const { departure_stop, arrival_stop, line, departure_time } =
-                    step.transit_details;
-                  return {
-                    type: "bus",
-                    from: departure_stop.name,
-                    to: arrival_stop.name,
-                    bus: line.short_name || line.name,
-                    departureTime: departure_time.text,
-                  };
-                }
+            return busLineIndexes;
+          });
 
-                return null;
-              }
-            )
-            .filter(Boolean);
-          setTransitDetails(transitInfo);
 
-          console.log("🚌 Transit info:", transitInfo);
 
-          setRouteCoordinates(coordinates);
-
-          if (coordinates.length && mapRef.current) {
-            mapRef.current.fitToCoordinates(coordinates, {
-              edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-              animated: true,
-            });
-          }
         } else {
           console.warn("No routes found in Google response");
         }
@@ -577,57 +634,57 @@ const Map = () => {
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
+                justifyContent: "center",
+                alignItems: "center",
                 marginTop: 10,
               }}>
-              {infoIndex != 0 && <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: "#9fbf2a",
-                  borderRadius: 5,
-                  padding: 5,
-                  margin: 10,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+              {<TouchableOpacity
+                style={[styles.infoButton, infoIndex === 0 && styles.greyedOut]}
                 onPress={() => {
-                  setInfoIndex((prevIndex) =>
-                    prevIndex === 0 ? 0 : prevIndex - 1
+                  setInfoIndex((prevIndex) => {
+                    const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
+                    if (mapRef.current && busPolyline.length > 0) {
+                      mapRef.current.fitToCoordinates(
+                        busPolyline.slice(busLineIndexes[newIndex], busLineIndexes[newIndex + 1] + 1),
+                        {
+                          edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                          animated: true,
+                        }
+                      );
+                    }
+                    return newIndex;
+                  }
                   );
                 }}
               >
-                <Text style={{ color: "white", fontWeight: "bold" }}>Previous</Text>
+                <Text style={{ color: "white", fontWeight: "bold" }}>{"<"}</Text>
               </TouchableOpacity>}
 
               <Text
-                style={{
-                  flex: 1,
-                  textAlign: "center",
-                  fontWeight: "bold",
-                  fontSize: 16,
-                  margin: 10,
-                }}>
+                style={styles.infoText}>
                 {infoIndex + 1} / {transitDetails.length}
               </Text>
-              {transitDetails && infoIndex < transitDetails.length - 1 && <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: "#9fbf2a",
-                  borderRadius: 5,
-                  padding: 5,
-                  margin: 10,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+              {<TouchableOpacity
+                style={[styles.infoButton, infoIndex === transitDetails.length - 1 && styles.greyedOut]}
                 onPress={() => {
-                  setInfoIndex((prevIndex) =>
-                    prevIndex === transitDetails.length - 1 ? prevIndex : prevIndex + 1
-                  );
+                  setInfoIndex((prevIndex) => {
+                    const newIndex = prevIndex === transitDetails.length - 1 ? prevIndex : prevIndex + 1;
+
+                    if (mapRef.current && busPolyline.length > 0) {
+                      mapRef.current.fitToCoordinates(
+                        busPolyline.slice(busLineIndexes[newIndex], busLineIndexes[newIndex + 1] + 1),
+                        {
+                          edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                          animated: true,
+                        }
+                      );
+                    }
+
+                    return newIndex;
+                  });
                 }}
               >
-                <Text style={{ color: "white", fontWeight: "bold" }}>Next</Text>
+                <Text style={{ color: "white", fontWeight: "bold" }}>{">"}</Text>
               </TouchableOpacity>}
             </View>
 
@@ -653,12 +710,37 @@ const Map = () => {
         )}
 
         {/* Route Polyline */}
-        {routeCoordinates.length > 0 && (
+        {routeCoordinates.length > 0 && (selectedMode !== "bus" || pickupPoints.length > 0) && (
           <Polyline
             coordinates={routeCoordinates}
             strokeColor="red"
             strokeWidth={4}
           />
+        )}
+
+        {selectedMode === "bus" && busPolyline.length > 0 && (
+          <>
+            <Polyline
+              coordinates={busPolyline.slice(busLineIndexes[infoIndex], busLineIndexes[infoIndex + 1] + 1)}
+              strokeColor="green"
+              strokeWidth={4}
+            />
+            {infoIndex < busLineIndexes.length - 1 && (
+              <Marker
+                coordinate={busPolyline[busLineIndexes[infoIndex + 1]]}
+                title={busStops[infoIndex]}
+                pinColor="green"
+              />
+            )}
+
+            {infoIndex > 0 && (
+              <Marker
+                coordinate={busPolyline[busLineIndexes[infoIndex]]}
+                title={busStops[infoIndex - 1]}
+                pinColor="green"
+              />
+            )}
+          </>
         )}
 
         {pickupPoints.map((point) => (
@@ -750,4 +832,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
   },
+  infoButton: {
+    backgroundColor: "#9fbf2a",
+    borderRadius: 50,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+
+  infoText: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginHorizontal: 10,
+  },
+  greyedOut: {
+    backgroundColor: "#d3d3d3",
+  }
 });
