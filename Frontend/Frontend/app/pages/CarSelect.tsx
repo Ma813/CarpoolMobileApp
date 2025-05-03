@@ -105,7 +105,7 @@ const CarSelectPage: React.FC = () => {
   };
 
   const submitCar = async () => {
-    if (!brand || !model || !licensePlate || !fuelType || (fuelType == "Petrol" || fuelType == "Diesel" && !fuelEfficiency) ) {
+    if (!brand || !model || !licensePlate || !fuelType || ((fuelType == "Petrol" || fuelType == "Diesel") && !fuelEfficiency) ) {
       alert("Please fill in all fields.");
       return;
     }

@@ -1,11 +1,11 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { removeData } from "@/services/localStorage";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { getData } from "@/services/localStorage";
+import { router } from "expo-router";
 
 export const NavBar = () => {
   const navigation = useNavigation<any>();
@@ -17,18 +17,18 @@ export const NavBar = () => {
   };
   return (
     <View style={styles.navbar}>
-      <Link href="/">
+      <TouchableOpacity onPress={() => router.push("/")}>
         <Ionicons name="home-outline" size={28} color="#333" />
-      </Link>
-      <Link href="/pages/Map">
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/pages/Map")}>
         <Ionicons name="map-outline" size={28} color="#333" />
-      </Link>
-      <Link href="/pages/Profile">
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/pages/Profile")}>
         <Ionicons name="person-outline" size={28} color="#333" />
-      </Link>
-      <Link href="/pages/Party">
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/pages/Party")}>
         <Ionicons name="people-outline" size={28} color="#333" />
-      </Link>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => handleLogout()}>
         <Ionicons name="log-out-outline" size={28} color="#333" />
       </TouchableOpacity>
