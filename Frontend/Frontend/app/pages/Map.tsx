@@ -62,7 +62,7 @@ const Map = () => {
     ];
 
   const [pickupPoints, setPickupPoints] = useState<
-    { latitude: number; longitude: number; order: number }[]
+    { latitude: number; longitude: number; order: number, usernames : string, address : string }[]
   >([]);
   const [transitDetails, setTransitDetails] = useState<
     {
@@ -102,6 +102,7 @@ const Map = () => {
     try {
       const data = await fetchOptimalPickup();
       if (Array.isArray(data)) {
+        console.log("Optimal pickup points:", data);
         setPickupPoints(data);
         await fetchPickupRoute();
       }
@@ -750,9 +751,9 @@ const Map = () => {
               latitude: point.latitude,
               longitude: point.longitude,
             }}
-            title={`Pickup #${point.order + 1}`}
-            description={`Latitude: ${point.latitude}, Longitude: ${point.longitude}`}
-            pinColor="green"
+            title={point.usernames}
+            description={point.address}
+            pinColor={point.order === pickupPoints.length - 1 ? "red" : "green"}
           />
         ))}
       </MapView>

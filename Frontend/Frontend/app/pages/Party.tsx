@@ -43,7 +43,7 @@ const Party: React.FC = () => {
   }, []);
 
   const openCreatePartyPage = () => {
-    router.navigate("/pages/CreateParty");
+    router.push("/pages/CreateParty");
   };
   const renderColleague = ({ item: colleague }: { item: any }) => (
     <View style={styles.colleagueCard}>

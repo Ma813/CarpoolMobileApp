@@ -85,7 +85,7 @@ const CreateParty: React.FC = () => {
     Alert.alert("All cards swiped", "You have swiped all colleagues.", [
       {
         text: "OK",
-        onPress: () => router.navigate("/pages/Party"),
+        onPress: () => router.push("/pages/Party"),
       },
     ]);
     try {
