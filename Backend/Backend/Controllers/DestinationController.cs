@@ -154,10 +154,31 @@ namespace Backend.Controllers
 
         [Authorize]
         [HttpGet("optimalPickup")]
-        public async Task<ActionResult> OptimalPassengerPickup()
+        public async Task<ActionResult> OptimalPassengerPickup([FromQuery] string id)
         {
             var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
             if (userId == null) return Unauthorized();
+
+            var partyId = int.Parse(id);
+            if (partyId <= 0) return BadRequest("Invalid party ID");
+
+
+            var homeAddress = await _context.UserAddresses
+                .Where(a => a.user_id == int.Parse(userId))
+                .Select(a => new { a.home_lat, a.home_lon, a.home_address })
+                .FirstOrDefaultAsync();
+            var routesWithNames = new List<object>();
+            if (homeAddress != null)
+            {
+                routesWithNames.Add(new
+                {
+                    Order = 0,
+                    Longitude = homeAddress.home_lon,
+                    Latitude = homeAddress.home_lat,
+                    Usernames = "Home",
+                    Address = homeAddress.home_address
+                });
+            }
 
             // Gauti vartotojo namų adresą
             var userAddress = await _context.UserAddresses
@@ -169,14 +190,23 @@ namespace Backend.Controllers
             double userLatitude = userAddress.home_lat;
             double userLongitude = userAddress.home_lon;
 
-            //Get party id
+            //Get party
             var party = await _context.Party
                 .Join(_context.Party_Members,
                       party => party.Id,
                       member => member.party_id,
                       (party, member) => new { party, member })
-                .Where(pm => pm.party.user_id == int.Parse(userId) && pm.member.role == "driver")
+                .Where(p => p.party.Id == partyId)
                 .FirstOrDefaultAsync();
+
+            if (party == null)
+            {
+                return NotFound("Party not found");
+            }
+            if (party.member.user_id != int.Parse(userId))
+            {
+                return Unauthorized("You are not the driver of this party");
+            }
 
             if (party == null)
             {
@@ -226,11 +256,11 @@ namespace Backend.Controllers
             var waypoints = jsonDoc.RootElement.GetProperty("waypoints");
             if (waypoints.GetArrayLength() == 0) return BadRequest("Could not optimize route");
 
-            // 5. Surinkti optimizuotą seką
+
             var optimizedRoute = waypoints.EnumerateArray().Skip(1) // Skip the first waypoint (user's home)
                 .Select(wp => new
                 {
-                    Order = wp.GetProperty("waypoint_index").GetInt32() - 1, // Skip driver's home
+                    Order = wp.GetProperty("waypoint_index").GetInt32(),
                     Longitude = wp.GetProperty("location")[0].GetDouble(),
                     Latitude = wp.GetProperty("location")[1].GetDouble(),
                 })
@@ -253,7 +283,6 @@ namespace Backend.Controllers
                 .OrderBy(wp => wp.Order)
                 .ToList();
 
-            var routesWithNames = new List<object>();
             System.Console.WriteLine("Passengers: " + JsonSerializer.Serialize(passengers));
             foreach (var route in optimizedNoDuplicates)
             {
@@ -308,6 +337,7 @@ namespace Backend.Controllers
                     Address = workAddress.work_address
                 });
             }
+
 
             return Ok(routesWithNames);
         }

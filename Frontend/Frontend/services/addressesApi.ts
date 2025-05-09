@@ -61,9 +61,9 @@ export const getClosestColleagues = async (range: number) => {
     throw error;
   }
 };
-export const fetchOptimalPickup = async () => {
+export const fetchOptimalPickup = async (id: string) => {
   try {
-    const response = await api.get("/destinations/optimalPickup", {
+    const response = await api.get(`/destinations/optimalPickup?id=${id}`, {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -71,7 +71,7 @@ export const fetchOptimalPickup = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching optimal pickup:", error);
+    console.log("Error fetching optimal pickup:", error);
     throw error;
   }
 };

@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, use, useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -8,8 +8,11 @@ import {
   TouchableOpacity,
   Text,
   Button,
+  Linking,
+  Image,
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import { getUserParties } from "@/services/partyApi";
+import MapView, { MapMarker, Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import {
   fetchAddresses,
@@ -25,6 +28,11 @@ import {
 import { fetchOptimalPickup } from "@/services/addressesApi";
 import { getModeOfTransport } from "@/services/modeOfTransportApi";
 import { Ionicons } from "@expo/vector-icons";
+import PopUpSelect from '../components/PopUpSelect';
+
+
+
+
 const Map = () => {
   const mapRef = React.useRef<MapView>(null);
 
@@ -62,8 +70,13 @@ const Map = () => {
     ];
 
   const [pickupPoints, setPickupPoints] = useState<
-    { latitude: number; longitude: number; order: number, usernames : string, address : string }[]
+    { latitude: number; longitude: number; order: number, usernames: string, address: string }[]
   >([]);
+
+  const [selectedPickup, setSelectedPickup] = useState<number>(0);
+  const [toWork, setToWork] = useState<boolean>(true); // State to track if the user is going to work or home
+
+
   const [transitDetails, setTransitDetails] = useState<
     {
       type: string;
@@ -86,25 +99,87 @@ const Map = () => {
 
   const [busStops, setBusStops] = useState<string[]>([]); // State to store bus stops
 
-  const handleShowPickups = async () => {
+
+  const markerRef = React.useRef<MapMarker>(null);
+
+  useEffect(() => {
+    // Automatically show callout for selected marker
+    if (markerRef.current) {
+
+      markerRef.current?.showCallout();
+    }
+  }, [selectedPickup]);
+  useEffect(() => {
+    // Automatically show callout for selected marker
+    if (markerRef.current) {
+
+      setTimeout(() => {
+        markerRef.current?.showCallout();
+      }, 500); // Delay to ensure the map is fully loadeds
+    }
+  }, [pickupPoints]);
+
+  interface PartyOption {
+    id: string;
+    name: string;
+  }
+
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<PartyOption | null>(null);
+  const [options, setOptions] = useState<PartyOption[]>([]);
+
+  const handleSelect = (option: PartyOption) => {
+    setSelectedOption(option);
+    setPopupVisible(false);
+    console.log("Selected option:", option.id);
+  };
+
+  const handlePartyPress = async () => {
+    const parties = await getUserParties();
+    console.log("Parties:", parties);
+
+    const partyOptions: PartyOption[] = parties.map((party: any) => ({
+      id: `${party.party_id}`,
+      name: party.name ?? `Party #${party.party_id}`,
+    }));
+
+    if (partyOptions.length === 0) {
+      Alert.alert("No parties found", "Please create a party first.");
+      return;
+    }
+
+    setOptions(partyOptions);
+    setPopupVisible(true);
+  };
+
+  useEffect(() => {
+    if (selectedOption) {
+      handleShowPickups(selectedOption.id);
+    }
+  }, [selectedOption]);
+
+  const handleShowPickups = async (id: string) => {
     if (!currentLocation) return;
 
     // Clear previous pickup points
     setPickupPoints([]);
-    setMarker(null); // Clear the marker when "Show Pickups" is pressed
-    setDestination(null); // Clear the destination when "Show Pickups" is pressed
-    setCO2(null); // Reset CO2 emissions when "Show Pickups" is pressed
-    setBusLineIndexes([]); // Clear bus line indexes when "Show Pickups" is pressed
-    setBusPolyline([]); // Clear bus polyline when "Show Pickups" is pressed
-    setTransitDetails([]); // Clear transit details when "Show Pickups" is pressed
-    setInfoIndex(0); // Reset info index when "Show Pickups" is pressed
+    setToWork(true); // Reset toWork state
+
+    setSelectedPickup(0);
+    setMarker(null);
+    setDestination(null);
+    setCO2(null);
+    setBusLineIndexes([]);
+    setBusPolyline([]);
+    setTransitDetails([]);
+    setInfoIndex(0);
 
     try {
-      const data = await fetchOptimalPickup();
+      const data = await fetchOptimalPickup(id);
       if (Array.isArray(data)) {
         console.log("Optimal pickup points:", data);
         setPickupPoints(data);
-        await fetchPickupRoute();
+        // await fetchPickupRoute();
       }
     } catch (error) {
       console.log("Error fetching optimal pickup points:", error);
@@ -122,9 +197,15 @@ const Map = () => {
       },
       ...pickupPoints.sort((a, b) => a.order - b.order),
     ];
-    const coordinatesStr = allPoints
-      .map((p) => `${p.longitude},${p.latitude}`)
-      .join(";");
+
+    // get only the selected pickup point and the next one
+
+    var skip = selectedPickup === 0 ? 0 : 1;
+
+    const origin = `${allPoints[selectedPickup + skip].longitude},${allPoints[selectedPickup + skip].latitude}`;
+    const dest = `${allPoints[selectedPickup + 2].longitude},${allPoints[selectedPickup + 2].latitude}`;
+    const coordinatesStr = `${origin};${dest}`;
+
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesStr}?geometries=geojson&access_token=${accessToken}&overview=full`;
 
     try {
@@ -199,21 +280,26 @@ const Map = () => {
   }, [destination]); // Fetch the route when the destinatio changes
 
   useEffect(() => {
-    setPickupPoints([]); // Clear pickup points when the selected mode changes
-    setBusPolyline([]); // Clear bus polyline when the selected mode changes
-    setRouteCoordinates([]); // Clear route coordinates when the selected mode changes
-    fetchCurrentLocation();
-    fetchRoute(); // Fetch the route when the selected mode changes
-    if (destination) {
-      handleGoPress();
-    }
+    setPickupPoints(() => {
+      setSelectedPickup(0); // Reset selected pickup index when the selected mode changes
+      setBusPolyline([]); // Clear bus polyline when the selected mode changes
+      setRouteCoordinates([]); // Clear route coordinates when the selected mode changes
+      fetchCurrentLocation();
+      fetchRoute(); // Fetch the route when the selected mode changes
+      if (destination) {
+        handleGoPress();
+      }
+
+      return [];
+    });
+
   }, [selectedMode]);
 
   useEffect(() => {
     if (pickupPoints.length > 0) {
       fetchPickupRoute();
     }
-  }, [pickupPoints]);
+  }, [pickupPoints, selectedPickup]);
 
   useEffect(() => {
     getLastAddresses()
@@ -276,6 +362,7 @@ const Map = () => {
 
   const fetchRoute = async () => {
     setPickupPoints([]); // Clear pickup points when fetching a new route
+    setSelectedPickup(0); // Reset selected pickup index when fetching a new route
     if (!destination) return; // Skip if no destination is set
     console.log("Fetching route to destination:", destination);
     if (!currentLocation) return; // Skip if no current location is set
@@ -398,7 +485,7 @@ const Map = () => {
           console.warn("No routes found in Google response");
         }
       } catch (error) {
-        console.error("Google API error:", error);
+        console.log("Google API error:", error);
       }
 
       return; // Skip Mapbox route fetch below
@@ -469,9 +556,10 @@ const Map = () => {
   };
 
   const handleGoPress = async () => {
+    setPickupPoints([]); // Clear pickup points when "GO" is pressed
+    setSelectedPickup(0); // Reset selected pickup index when "GO" is pressed
     setInfoIndex(0); // Reset info index when "GO" is pressed
     setMarker(null); // Clear the marker when "GO" is pressed
-    setPickupPoints([]); // Clear pickup points when "GO" is pressed
     console.log("Go to address:", selectedSuggestion?.place_name);
     if (selectedSuggestion) {
       try {
@@ -512,6 +600,16 @@ const Map = () => {
 
   return (
     <View style={styles.container}>
+
+      <PopUpSelect
+        title="Select a party"
+        visible={popupVisible}
+        options={options}
+        onSelect={(option) => handleSelect(option)}
+        onClose={() => setPopupVisible(false)}
+      />
+
+
       <View style={styles.navBarContainer}>
         <NavBar />
       </View>
@@ -534,10 +632,20 @@ const Map = () => {
           style={styles.input}
         />
         <TouchableOpacity style={styles.button} onPress={handleGoPress}>
-          <Text style={styles.buttonText}>GO</Text>
+          <Ionicons
+            name="navigate-outline"
+            size={15}
+            color="white"
+            style={{ marginRight: 5 }}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={handleShowPickups}>
-          <Text style={styles.buttonText}>Show Pickups</Text>
+        <TouchableOpacity style={styles.button} onPress={handlePartyPress}>
+          <Ionicons
+            name="people-outline"
+            size={15}
+            color="white"
+            style={{ marginRight: 5 }}
+          />
         </TouchableOpacity>
       </View>
 
@@ -628,7 +736,7 @@ const Map = () => {
               <>
                 <Text>🚶 Walk: {transitDetails[infoIndex].instructions}</Text>
                 <Text>
-                  🗺 Distance: {transitDetails[infoIndex].distance} ({transitDetails[0].duration})
+                  🗺 Distance: {transitDetails[infoIndex].distance} ({transitDetails[infoIndex].duration})
                 </Text>
               </>
             )}
@@ -692,6 +800,114 @@ const Map = () => {
           </View>
         </View>
       )}
+
+      {pickupPoints.length > 0 && (
+        <View
+          style={{
+            backgroundColor: "white",
+            padding: 10,
+          }}
+        >
+          <Text>{toWork ? "Pickup party members to work" : "Drop off party members at home"}</Text>
+
+          <View key={pickupPoints[selectedPickup].order}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons
+                name={pickupPoints[selectedPickup + 1].usernames == "Work" ? "briefcase" :
+                  pickupPoints[selectedPickup + 1].usernames == "Home" ? "home" : pickupPoints[selectedPickup + 1].usernames.includes(",") ? "people" : "person"}
+                size={16}
+                color="black"
+                style={{ marginRight: 5 }}
+              />
+              <Text style={styles.label}>
+                {pickupPoints[selectedPickup + 1].usernames}
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons
+                name="business"
+                size={16}
+                color="black"
+                style={{ marginRight: 5 }}
+              />
+              <Text style={styles.label}>
+                {pickupPoints[selectedPickup + 1].address}
+              </Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                marginTop: 10,
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.infoButton,
+                  selectedPickup === 0 && styles.greyedOut,
+                ]}
+                onPress={() => {
+                  setSelectedPickup((prevIndex) => {
+                    const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
+                    return newIndex;
+                  });
+                }}
+              >
+                <Text>{"<"}</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.infoText}>
+                {/* we are skipping the first one, because we're starting at current location */}
+                {selectedPickup + 1} / {pickupPoints.length - 1}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.infoButton,
+                  selectedPickup === pickupPoints.length - 2 && styles.greyedOut,
+                ]}
+                onPress={() => {
+                  setSelectedPickup((prevIndex) => {
+                    const newIndex = prevIndex === pickupPoints.length - 2 ? prevIndex : prevIndex + 1;
+                    return newIndex;
+                  });
+                }}
+              >
+                <Text>{">"}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 }}>
+              <TouchableOpacity style={styles.button}
+                onPress={() => {
+                  setToWork(!toWork);
+                  setSelectedPickup(0);
+                  setPickupPoints((prevPoints) =>
+                    prevPoints.map((point) => ({
+                      ...point,
+                      order: prevPoints.length - 1 - point.order, // Swap the order of the points
+                    })))
+
+                  fetchPickupRoute();
+
+                }}
+              >
+                <Ionicons
+                  name={toWork ? "home" : "briefcase"}
+                  size={20}
+                  color="white"
+                />
+              </TouchableOpacity>
+
+            </View>
+
+          </View>
+        </View>
+      )}
+
+
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -744,18 +960,31 @@ const Map = () => {
           </>
         )}
 
-        {pickupPoints.map((point) => (
+        {selectedPickup > 0 && (
           <Marker
-            key={point.order}
             coordinate={{
-              latitude: point.latitude,
-              longitude: point.longitude,
+              latitude: pickupPoints[selectedPickup].latitude,
+              longitude: pickupPoints[selectedPickup].longitude,
             }}
-            title={point.usernames}
-            description={point.address}
-            pinColor={point.order === pickupPoints.length - 1 ? "red" : "green"}
+            title={pickupPoints[selectedPickup].usernames}
+            description={pickupPoints[selectedPickup].address}
+            pinColor="green"
           />
-        ))}
+        )}
+
+        {pickupPoints.length > 1 && selectedPickup < pickupPoints.length && (
+          <Marker
+            ref={markerRef}
+            coordinate={{
+              latitude: pickupPoints[selectedPickup + 1].latitude,
+              longitude: pickupPoints[selectedPickup + 1].longitude,
+            }}
+            title={pickupPoints[selectedPickup + 1].usernames}
+            description={pickupPoints[selectedPickup + 1].address}
+            pinColor="red"
+          />
+        )}
+
       </MapView>
     </View>
   );
@@ -806,6 +1035,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#9fbf2a",
     padding: 13,
     borderRadius: 5,
+    marginLeft: 5,
   },
   buttonText: {
     color: "#fff",
