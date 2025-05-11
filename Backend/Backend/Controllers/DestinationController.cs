@@ -341,5 +341,59 @@ namespace Backend.Controllers
 
             return Ok(routesWithNames);
         }
+        [Authorize]
+        [HttpGet("summary")]
+        public async Task<ActionResult> GetUserSummary()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null) return Unauthorized();
+
+            int uid = int.Parse(userId);
+
+            var destinations = await _context.Destinations
+                .Where(d => d.user_id == uid)
+                .OrderByDescending(d => d.date)
+                .ToListAsync();
+
+            if (!destinations.Any())
+            {
+                return Ok(new
+                {
+                    total_rides = 0,
+                    total_emissions = 0,
+                    last_ride = (object?)null,
+                    top_destinations = new List<object>()
+                });
+            }
+
+            var totalRides = destinations.Count;
+            var totalEmissions = destinations.Sum(d => d.co2_emission);
+
+            var lastRide = destinations.First(); // Jau surikiuota pagal datą
+
+            var topDestinations = destinations
+                .GroupBy(d => d.place_name)
+                .Select(g => new {
+                    place_name = g.Key,
+                    count = g.Count()
+                })
+                .OrderByDescending(g => g.count)
+                .Take(5)
+                .ToList();
+
+            return Ok(new
+            {
+                total_rides = totalRides,
+                total_emissions = Math.Round((double)(totalEmissions ?? 0), 2),
+                last_ride = new
+                {
+                    place_name = lastRide.place_name,
+                    date = lastRide.date?.ToString("yyyy-MM-dd") ?? "N/A",
+                    transport = lastRide.mode_of_transport,
+                    emissions = Math.Round(lastRide.co2_emission ?? 0, 2)
+                },
+                top_destinations = topDestinations
+            });
+        }
     }
 }

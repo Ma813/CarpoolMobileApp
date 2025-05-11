@@ -19,9 +19,6 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     alignSelf: 'center',
-    position: 'absolute',
-    top: '50%',
-    transform: [{ translateY: -15 }], // Adjust based on actual height
     fontFamily: 'Gotham-Bold',
   },
   image: {
@@ -30,6 +27,42 @@ export const styles = StyleSheet.create({
   },
   app_name: {
     fontSize: 33,
-    fontFamily: 'Gotham-bold',
+    fontFamily: 'Gotham-Bold',
+  },
+  summarySection: {
+  marginBottom: 16,
+  padding: 12,
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  borderLeftWidth: 5,
+  borderLeftColor: '#9fbf2a',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  elevation: 2,
+},
+
+summarySectionTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: 6,
+  fontFamily: 'Gotham-Bold',
+  color: '#333',
+},
+
+summarySectionText: {
+  fontSize: 15,
+  lineHeight: 18,
+  fontFamily: 'Gotham',
+  textAlign: 'left',
+  color: '#555',
+},
+
+  error: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
+    fontFamily: 'Gotham',
   },
 });

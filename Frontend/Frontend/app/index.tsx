@@ -1,10 +1,11 @@
 import { styles } from "./styles";
 import { Link, useNavigation } from "expo-router";
 import { removeData, getData } from "@/services/localStorage";
-import { Text, View, Button, Image, KeyboardAvoidingView } from "react-native";
+import { Text, View, Button, Image, KeyboardAvoidingView, ScrollView } from "react-native";
 import React, { useEffect, useState } from "react";
 import { NavBar } from "./components/NavBar";
 import { useFonts } from 'expo-font';
+import { getUserSummary } from "@/services/api";
 
 const GoogleNaps = () => {
   const [fontsLoaded] = useFonts({
@@ -14,30 +15,41 @@ const GoogleNaps = () => {
     'Gotham-Light': require('@/assets/fonts/Gotham-Light.otf'),
   });
 
-
-  const [username, setUsername] = useState(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [summary, setSummary] = useState<any>(null);  // Santrauka duomenims
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const navigation = useNavigation<any>();
 
+  // Funkcija, kad gauti vartotojo duomenis ir santrauką
   const fetchData = async () => {
     const username = await getData("username");
     setUsername(username);
     if (!username) {
       navigation.navigate("pages/LoginPage");
+    } else {
+      try {
+        const summaryData = await getUserSummary(); // Užklausa API
+        setSummary(summaryData);
+      } catch (error) {
+        setError("Nepavyko gauti santraukos.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     fetchData();
-  }, [username]); // Empty array ensures this runs once on mount
+  }, [username]); // Kviečiame tik tada, kai username pasikeičia
 
-  if (!username) {
+  if (!username || loading) {
     return (
       <View>
         <Text>Loading...</Text>
       </View>
     );
   }
-
 
   return (
     <KeyboardAvoidingView style={styles.container}>
@@ -46,7 +58,36 @@ const GoogleNaps = () => {
       <Text style={styles.app_name}>COLLAB.RIDE</Text>
       <Text style={[styles.welcomeText, { textAlign: "center", alignSelf: "center" }]}>Welcome, {username}!</Text>
 
-
+      {/* Santrauka rodoma tik jei duomenys įkelti */}
+      {error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : (
+        <View style={styles.summarySection}>
+          <Text style={styles.summarySectionTitle}>Jūsų aktyvumo santrauka</Text>
+          <View style={styles.summarySection}>
+            <Text style={styles.summarySectionText}>Bendras važiavimų skaičius: {summary?.total_rides}</Text>
+            <Text style={styles.summarySectionText}>Bendras CO2 emisijos kiekis: {summary?.total_emissions} kg</Text>
+          </View>
+          <View style={styles.summarySection}>
+            <Text style={styles.summarySectionText}>Jūsų paskutinė kelionė:</Text>
+            <Text style={styles.summarySectionText}>
+              {summary?.last_ride?.place_name}
+            </Text>
+            <Text style={styles.summarySectionText}>
+              Data: {summary?.last_ride?.date}
+            </Text>
+            <Text style={styles.summarySectionText}>
+              CO₂: {summary?.last_ride?.emissions} kg
+            </Text>
+          </View>
+          <View style={styles.summarySection}>          
+            <Text style={styles.summarySectionText}>Jūsų daugiausiai lankytinos vietos:</Text>
+          {summary?.top_destinations?.map((destination: any, index: number) => (
+            <Text key={index} style={styles.summarySectionText}>{destination.place_name}</Text>
+          ))}
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 };

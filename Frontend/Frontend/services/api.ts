@@ -50,5 +50,26 @@ export const getWeatherForecast = async (): Promise<WeatherForecast[]> => {
     const response = await api.get('/WeatherForecast');
     return response.data;
 }
+export type UserSummary = {
+  total_rides: number;
+  total_emissions: number;
+  last_ride: {
+    place_name: string;
+    date: string;
+    transport: string;
+    emissions: number;
+  } | null;
+  top_destinations: {
+    place_name: string;
+    count: number;
+  }[];
+};
+
+export const getUserSummary = async (): Promise<UserSummary> => {
+  const response = await api.get('/destinations/summary');
+  return response.data;
+};
+
+
 
 export default api;
