@@ -55,7 +55,7 @@ namespace Backend.Controllers
             await _context.Party_Members.AddAsync(partyMember);
             await _context.SaveChangesAsync();
             return Ok(newParty);
-            }
+        }
         [Authorize]
         [HttpPost("addPartyMember")]
         public async Task<ActionResult> AddPartyMember([FromBody] PartyMemberDTO partyMemberDTO)
@@ -93,13 +93,8 @@ namespace Backend.Controllers
             int parsedUserId = int.Parse(userId);
 
             // Get all parties created by the user
-            var partyIds = await _context.Party_Members
-                .Where(pm => pm.user_id == parsedUserId && pm.accepted)
-                .Select(pm => pm.party_id)
-                .ToListAsync();
-
             var parties = await _context.Party
-                .Where(p => partyIds.Contains(p.Id))
+                .Where(p => p.user_id == parsedUserId)
                 .ToListAsync();
 
 
@@ -122,7 +117,7 @@ namespace Backend.Controllers
 
                 // Manually fetch party members for this party
                 var members = await _context.Party_Members
-                    .Where(pm => pm.party_id == party.Id)
+                    .Where(pm => pm.party_id == party.Id && pm.accepted)
                     .ToListAsync();
 
                 foreach (var member in members)
@@ -162,36 +157,7 @@ namespace Backend.Controllers
 
             return Ok(partyDTOs);
         }
-        
-        [Authorize]
-        [HttpGet("getInvites")]
-        public async Task<IActionResult> GetInvites()
-        {
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
 
-            int parsedUserId = int.Parse(userId);
-
-            var invites = await _context.Party_Members
-                .Where(pm => pm.user_id == parsedUserId && pm.invited && !pm.accepted)
-                .Include(pm => pm.party)
-                .ToListAsync();
-
-            var response = new List<object>();
-
-            foreach (var invite in invites)
-            {
-                var driver = await _context.Users.FindAsync(invite.party.user_id);
-                response.Add(new
-                {
-                    party_id = invite.party_id,
-                    driver_name = driver?.Username,
-                    driver_id = driver?.Id,
-                });
-            }
 
         [Authorize]
         [HttpGet("getPassengerParties")]
@@ -206,9 +172,8 @@ namespace Backend.Controllers
             int parsedUserId = int.Parse(userId);
 
             // Get all parties where the user is a passenger
-            //TODO: add accepted = true when implemented
             var parties = await _context.Party_Members
-                .Where(pm => pm.user_id == parsedUserId && pm.role == "passenger") // && pm.accepted needs to added in the future
+                .Where(pm => pm.user_id == parsedUserId && pm.role == "passenger" && pm.accepted)
                 .Select(pm => pm.party_id)
                 .ToListAsync();
 
@@ -222,7 +187,7 @@ namespace Backend.Controllers
             foreach (var partyId in parties)
             {
                 var party = await _context.Party.FindAsync(partyId);
-                if (party == null) continue;               
+                if (party == null) continue;
 
                 var partyDto = new PartyDTO
                 {
@@ -234,7 +199,7 @@ namespace Backend.Controllers
 
                 // Manually fetch party members for this party
                 var members = await _context.Party_Members
-                    .Where(pm => pm.party_id == party.Id)
+                    .Where(pm => pm.party_id == party.Id && pm.accepted)
                     .ToListAsync();
 
                 foreach (var member in members)
@@ -332,8 +297,8 @@ namespace Backend.Controllers
 
             return Ok("Party deleted successfully.");
         }
-        
-        
+
+
         [Authorize]
         [HttpGet("getInvites")]
         public async Task<IActionResult> GetInvites()
@@ -366,7 +331,7 @@ namespace Backend.Controllers
 
             return Ok(response);
         }
-        
+
         [Authorize]
         [HttpPost("respondToInvite")]
         public async Task<IActionResult> RespondToInvite([FromBody] Party_Member responseDto)
@@ -400,8 +365,8 @@ namespace Backend.Controllers
                 return Ok("Invite declined.");
             }
         }
-        
-        
+
+
         private async Task<string> GetUserName(int userId)
         {
             var user = await _context.Users.FindAsync(userId);

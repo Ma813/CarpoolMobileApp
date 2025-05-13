@@ -38,7 +38,7 @@ const respondToInvite = async (party_id: number, accepted: boolean) => {
     });
     Alert.alert("Success", accepted ? "Invite accepted!" : "Invite declined.");
     fetchInvites(); // atnaujinti pakvietimų sąrašą
-    GetUserParties(); // atnaujinti savo Party
+    GetPassengerParties();
   } catch (error) {
     console.log("Error responding to invite:", error);
   }
