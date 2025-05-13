@@ -49,12 +49,13 @@ namespace Backend.Controllers
                 party_id = newParty.Id,
                 user_id = int.Parse(userId),
                 accepted = true,
+                invited = true,
                 role = "driver"
             };
             await _context.Party_Members.AddAsync(partyMember);
             await _context.SaveChangesAsync();
             return Ok(newParty);
-        }
+            }
         [Authorize]
         [HttpPost("addPartyMember")]
         public async Task<ActionResult> AddPartyMember([FromBody] PartyMemberDTO partyMemberDTO)
@@ -70,6 +71,7 @@ namespace Backend.Controllers
                 party_id = partyMemberDTO.party_id,
                 user_id = partyMemberDTO.user_id,
                 accepted = false,
+                invited = true,
                 role = "passenger"
             };
 
@@ -91,9 +93,15 @@ namespace Backend.Controllers
             int parsedUserId = int.Parse(userId);
 
             // Get all parties created by the user
-            var parties = await _context.Party
-                .Where(p => p.user_id == parsedUserId)
+            var partyIds = await _context.Party_Members
+                .Where(pm => pm.user_id == parsedUserId && pm.accepted)
+                .Select(pm => pm.party_id)
                 .ToListAsync();
+
+            var parties = await _context.Party
+                .Where(p => partyIds.Contains(p.Id))
+                .ToListAsync();
+
 
             if (!parties.Any())
             {
@@ -154,6 +162,36 @@ namespace Backend.Controllers
 
             return Ok(partyDTOs);
         }
+        
+        [Authorize]
+        [HttpGet("getInvites")]
+        public async Task<IActionResult> GetInvites()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            int parsedUserId = int.Parse(userId);
+
+            var invites = await _context.Party_Members
+                .Where(pm => pm.user_id == parsedUserId && pm.invited && !pm.accepted)
+                .Include(pm => pm.party)
+                .ToListAsync();
+
+            var response = new List<object>();
+
+            foreach (var invite in invites)
+            {
+                var driver = await _context.Users.FindAsync(invite.party.user_id);
+                response.Add(new
+                {
+                    party_id = invite.party_id,
+                    driver_name = driver?.Username,
+                    driver_id = driver?.Id,
+                });
+            }
 
         [Authorize]
         [HttpGet("getPassengerParties")]
@@ -294,8 +332,76 @@ namespace Backend.Controllers
 
             return Ok("Party deleted successfully.");
         }
+        
+        
+        [Authorize]
+        [HttpGet("getInvites")]
+        public async Task<IActionResult> GetInvites()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
 
+            int parsedUserId = int.Parse(userId);
 
+            var invites = await _context.Party_Members
+                .Where(pm => pm.user_id == parsedUserId && pm.invited && !pm.accepted)
+                .Include(pm => pm.party)
+                .ToListAsync();
+
+            var response = new List<object>();
+
+            foreach (var invite in invites)
+            {
+                var driver = await _context.Users.FindAsync(invite.party.user_id);
+                response.Add(new
+                {
+                    party_id = invite.party_id,
+                    driver_name = driver?.Username,
+                    driver_id = driver?.Id,
+                });
+            }
+
+            return Ok(response);
+        }
+        
+        [Authorize]
+        [HttpPost("respondToInvite")]
+        public async Task<IActionResult> RespondToInvite([FromBody] Party_Member responseDto)
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            int parsedUserId = int.Parse(userId);
+
+            var invite = await _context.Party_Members
+                .FirstOrDefaultAsync(pm => pm.party_id == responseDto.party_id && pm.user_id == parsedUserId && pm.invited && !pm.accepted);
+
+            if (invite == null)
+            {
+                return NotFound("Invite not found.");
+            }
+
+            if (responseDto.accepted)
+            {
+                invite.accepted = true;
+                await _context.SaveChangesAsync();
+                return Ok("Invite accepted.");
+            }
+            else
+            {
+                _context.Party_Members.Remove(invite);
+                await _context.SaveChangesAsync();
+                return Ok("Invite declined.");
+            }
+        }
+        
+        
         private async Task<string> GetUserName(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
