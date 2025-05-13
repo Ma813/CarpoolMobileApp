@@ -81,7 +81,7 @@ const LoginPage = () => {
         try {
             await login({ username, password }).then(() => {
                 console.log('Logged in');
-                navigation.navigate('index');
+                navigation.push('index');
             });
         } catch (error: any) {
             if (error.response && error.response.status === 401) {
@@ -137,7 +137,7 @@ const LoginPage = () => {
 
                         <Text style={styles.text}>Don't have an account?</Text>
 
-                        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('pages/RegisterPage')}>
+                        <TouchableOpacity style={styles.button} onPress={() => navigation.push('pages/RegisterPage')}>
                             <Text style={styles.buttonText}>REGISTER</Text>
                         </TouchableOpacity>
                     </View>

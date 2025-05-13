@@ -26,6 +26,7 @@ const Party: React.FC = () => {
   const [range, setRange] = useState<number>(15000); // State to manage search range
   const invitedColleaguesRef = useRef<any[]>([]);
   const [userParties, setUserParties] = useState<any[]>([]);
+  const [passengerParties, setPassengerParties] = useState<any[]>([]);
   const router = useRouter();
 
   const GetUserParties = async () => {
@@ -38,8 +39,19 @@ const Party: React.FC = () => {
     }
   };
 
+  const GetPassengerParties = async () => {
+    try {
+      const response = await api.get("/party/getPassengerParties");
+      console.log("Passenger parties:", response.data);
+      setPassengerParties(response.data); // Store response in state
+    } catch (error) {
+      console.log("Error fetching passenger parties:", error);
+    }
+  };
+
   useEffect(() => {
     GetUserParties();
+    GetPassengerParties();
   }, []);
 
   const openCreatePartyPage = () => {
@@ -92,16 +104,56 @@ const Party: React.FC = () => {
           color="#9fbf2a"
           style={styles.loadingIndicator}
         />
-      ) : userParties.length > 0 ? (
+      ) : (
+      userParties.length === 0 && passengerParties.length === 0 ? (
+        <Text style={styles.noMembersText}>No parties found.</Text>
+      ) : (
         <FlatList
-          data={userParties}
+          data={[...userParties.map(p => ({ ...p, role: 'driver' })), ...passengerParties.map(p => ({ ...p, role: 'passenger' }))]}
           keyExtractor={(party, index) => index.toString()}
-          renderItem={renderParty}
+          renderItem={({ item, index }) => {
+            // Check if this is the first driver or first passenger in the list
+            const allParties = [
+              ...userParties.map(p => ({ ...p, role: 'driver' })),
+              ...passengerParties.map(p => ({ ...p, role: 'passenger' }))
+            ];
+            const isFirstDriver =
+              item.role === 'driver' &&
+              !allParties.slice(0, index).some(p => p.role === 'driver');
+            const isFirstPassenger =
+              item.role === 'passenger' &&
+              !allParties.slice(0, index).some(p => p.role === 'passenger');
+            return (
+              <View>
+                {(isFirstDriver || isFirstPassenger) && (
+                  <Text style={styles.subtitle}>
+                    {item.role === 'driver' ? 'As driver' : 'As passenger'}
+                  </Text>
+                )}
+                {renderParty({ item })}
+              </View>
+            );
+          }}
           contentContainerStyle={styles.scrollContent}
         />
-      ) : (
-        <Text style={styles.emptyText}>No parties found.</Text>
+      )
       )}
+
+
+
+      {/* // userParties.length > 0 ? (
+      //   <FlatList
+        //     ListHeaderComponent={
+        //       <Text style={styles.subtitle}>You're driving these</Text>
+        //     }
+        //     data={userParties}
+        //     keyExtractor={(party, index) => index.toString()}
+        //     renderItem={renderParty}
+        //     contentContainerStyle={styles.scrollContent}
+        //   />
+        // ) : (
+        //   <Text style={styles.emptyText}>No parties found.</Text>
+        // )} */}
       <NavBar />
     </View>
   );
@@ -120,6 +172,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
     textAlign: "center",
   },
   button: {

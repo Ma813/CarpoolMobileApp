@@ -13,7 +13,7 @@ export const NavBar = () => {
   const handleLogout = async () => {
     await removeData("token");
     await removeData("username");
-    navigation.navigate("pages/LoginPage");
+    navigation.push("pages/LoginPage");
   };
   return (
     <View style={styles.navbar}>

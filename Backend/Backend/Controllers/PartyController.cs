@@ -155,6 +155,88 @@ namespace Backend.Controllers
             return Ok(partyDTOs);
         }
 
+        [Authorize]
+        [HttpGet("getPassengerParties")]
+        public async Task<IActionResult> GetPassengerParties()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            int parsedUserId = int.Parse(userId);
+
+            // Get all parties where the user is a passenger
+            //TODO: add accepted = true when implemented
+            var parties = await _context.Party_Members
+                .Where(pm => pm.user_id == parsedUserId && pm.role == "passenger") // && pm.accepted needs to added in the future
+                .Select(pm => pm.party_id)
+                .ToListAsync();
+
+            if (!parties.Any())
+            {
+                return Ok(new List<PartyDTO>()); // Better than returning NotFound
+            }
+
+            var partyDTOs = new List<PartyDTO>();
+
+            foreach (var partyId in parties)
+            {
+                var party = await _context.Party.FindAsync(partyId);
+                if (party == null) continue;               
+
+                var partyDto = new PartyDTO
+                {
+                    party_id = party.Id,
+                    driver_name = await GetUserName(party.user_id),
+                    user_id = party.user_id,
+                    colleague_list = new List<PartyColleagueDTO>()
+                };
+
+                // Manually fetch party members for this party
+                var members = await _context.Party_Members
+                    .Where(pm => pm.party_id == party.Id)
+                    .ToListAsync();
+
+                foreach (var member in members)
+                {
+                    // Skip the user if you only want to include colleagues
+                    if (member.user_id == parsedUserId)
+                        continue;
+
+                    var user = await _context.Users.FindAsync(member.user_id);
+                    if (user == null) continue;
+
+                    var userAddresses = await _context.UserAddresses
+                        .FirstOrDefaultAsync(ua => ua.user_id == user.Id);
+
+                    partyDto.colleague_list.Add(new PartyColleagueDTO
+                    {
+                        user_id = user.Id,
+                        user_name = user.Username,
+                        work_address = userAddresses.work_address,
+                        home_address = userAddresses.home_address,
+                        work_coordinates = new CoordinatesDto
+                        {
+                            latitude = userAddresses.work_lat,
+                            longitude = userAddresses.work_lon
+                        },
+                        home_coordinates = new CoordinatesDto
+                        {
+                            latitude = userAddresses.home_lat,
+                            longitude = userAddresses.home_lon
+                        },
+                        image_path = user.ImagePath,
+                    });
+                }
+
+                partyDTOs.Add(partyDto);
+            }
+
+            return Ok(partyDTOs);
+        }
+
         private async Task<string> GetUserName(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
