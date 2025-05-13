@@ -97,7 +97,7 @@ namespace Backend.Controllers
 
             if (!parties.Any())
             {
-                return NotFound("No parties found.");
+                return Ok(new List<PartyDTO>()); // Better than returning NotFound
             }
 
             var partyDTOs = new List<PartyDTO>();
@@ -236,6 +236,65 @@ namespace Backend.Controllers
 
             return Ok(partyDTOs);
         }
+
+        [Authorize]
+        [HttpDelete("leaveParty/{id}")]
+        public async Task<IActionResult> LeaveParty(int id)
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var partyMember = await _context.Party_Members
+                .FirstOrDefaultAsync(pm => pm.party_id == id && pm.user_id == int.Parse(userId));
+
+            if (partyMember == null)
+            {
+                return NotFound("Party member not found.");
+            }
+
+            if (partyMember.role == "driver")
+            {
+                return BadRequest("Driver cannot leave the party.");
+            }
+
+            _context.Party_Members.Remove(partyMember);
+            await _context.SaveChangesAsync();
+
+            return Ok("Left the party successfully.");
+        }
+
+        [Authorize]
+        [HttpDelete("deleteParty/{id}")]
+        public async Task<IActionResult> DeleteParty(int id)
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var party = await _context.Party.FindAsync(id);
+            if (party == null || party.user_id != int.Parse(userId))
+            {
+                return NotFound("Party not found or you are not the owner.");
+            }
+
+            //remove party members
+            var partyMembers = await _context.Party_Members
+                .Where(pm => pm.party_id == id)
+                .ToListAsync();
+            _context.Party_Members.RemoveRange(partyMembers);
+            await _context.SaveChangesAsync();
+
+            _context.Party.Remove(party);
+            await _context.SaveChangesAsync();
+
+            return Ok("Party deleted successfully.");
+        }
+
 
         private async Task<string> GetUserName(int userId)
         {

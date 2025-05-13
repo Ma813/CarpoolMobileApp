@@ -888,7 +888,7 @@ const Map = () => {
                     prevPoints.map((point) => ({
                       ...point,
                       order: prevPoints.length - 1 - point.order, // Swap the order of the points
-                    })))
+                    })));
 
                   fetchPickupRoute();
 

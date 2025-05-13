@@ -19,6 +19,7 @@ import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
 import api from "@/services/api";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { baseurl } from "@/constants/baseurl";
 
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
@@ -54,6 +55,13 @@ const Party: React.FC = () => {
     GetPassengerParties();
   }, []);
 
+  const leaveParty = async (partyId: number) =>
+    await api.delete("/party/leaveParty/" + partyId);
+
+  const deleteParty = async (partyId: number) =>
+    await api.delete("/party/deleteParty/" + partyId);
+
+
   const openCreatePartyPage = () => {
     router.push("/pages/CreateParty");
   };
@@ -65,7 +73,7 @@ const Party: React.FC = () => {
       <Text style={styles.colleagueSubText}>🏠 {colleague.home_address}</Text>
       {colleague.image_path ? (
         <Image
-          source={{ uri: colleague.image_path }}
+          source={{ uri: baseurl + colleague.image_path }}
           style={styles.colleagueImage}
         />
       ) : null}
@@ -85,6 +93,71 @@ const Party: React.FC = () => {
       ) : (
         <Text style={styles.noMembersText}>No members in this party.</Text>
       )}
+
+      {party.role === "passenger" && (
+        <TouchableOpacity
+          style={styles.dangerButton}
+          onPress={() =>
+            Alert.alert(
+              "Leave Party",
+              "Are you sure you want to leave this party?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Leave",
+                  style: "destructive",
+                  onPress: () => {
+                    leaveParty(party.party_id)
+                      .then(() => {
+                        console.log("Left party successfully");
+                        GetPassengerParties();
+                      })
+                      .catch((error) => {
+                        console.log("Error leaving party:", error);
+                      });
+                  },
+                },
+              ]
+            )
+          }
+        >
+          <Text style={styles.buttonText}>Leave Party</Text>
+        </TouchableOpacity>
+      )}
+
+      {party.role === "driver" && (
+        <TouchableOpacity
+          style={styles.dangerButton}
+          onPress={() =>
+            Alert.alert(
+              "Delete Party",
+              "Are you sure you want to delete this party?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    api
+                      deleteParty(party.party_id)
+                      .then(() => {
+                        console.log("Deleted party successfully");
+                        GetUserParties();
+                      })
+                      .catch((error) => {
+                        console.log("Error deleting party:", error);
+                      });
+                  },
+                },
+              ]
+            )
+          }
+        >
+          <Text style={styles.buttonText}>Delete Party</Text>
+        </TouchableOpacity>
+      )}
+
+
     </View>
   );
 
@@ -105,38 +178,38 @@ const Party: React.FC = () => {
           style={styles.loadingIndicator}
         />
       ) : (
-      userParties.length === 0 && passengerParties.length === 0 ? (
-        <Text style={styles.noMembersText}>No parties found.</Text>
-      ) : (
-        <FlatList
-          data={[...userParties.map(p => ({ ...p, role: 'driver' })), ...passengerParties.map(p => ({ ...p, role: 'passenger' }))]}
-          keyExtractor={(party, index) => index.toString()}
-          renderItem={({ item, index }) => {
-            // Check if this is the first driver or first passenger in the list
-            const allParties = [
-              ...userParties.map(p => ({ ...p, role: 'driver' })),
-              ...passengerParties.map(p => ({ ...p, role: 'passenger' }))
-            ];
-            const isFirstDriver =
-              item.role === 'driver' &&
-              !allParties.slice(0, index).some(p => p.role === 'driver');
-            const isFirstPassenger =
-              item.role === 'passenger' &&
-              !allParties.slice(0, index).some(p => p.role === 'passenger');
-            return (
-              <View>
-                {(isFirstDriver || isFirstPassenger) && (
-                  <Text style={styles.subtitle}>
-                    {item.role === 'driver' ? 'As driver' : 'As passenger'}
-                  </Text>
-                )}
-                {renderParty({ item })}
-              </View>
-            );
-          }}
-          contentContainerStyle={styles.scrollContent}
-        />
-      )
+        userParties.length === 0 && passengerParties.length === 0 ? (
+          <Text style={styles.noMembersText}>No parties found.</Text>
+        ) : (
+          <FlatList
+            data={[...userParties.map(p => ({ ...p, role: 'driver' })), ...passengerParties.map(p => ({ ...p, role: 'passenger' }))]}
+            keyExtractor={(party, index) => index.toString()}
+            renderItem={({ item, index }) => {
+              // Check if this is the first driver or first passenger in the list
+              const allParties = [
+                ...userParties.map(p => ({ ...p, role: 'driver' })),
+                ...passengerParties.map(p => ({ ...p, role: 'passenger' }))
+              ];
+              const isFirstDriver =
+                item.role === 'driver' &&
+                !allParties.slice(0, index).some(p => p.role === 'driver');
+              const isFirstPassenger =
+                item.role === 'passenger' &&
+                !allParties.slice(0, index).some(p => p.role === 'passenger');
+              return (
+                <View>
+                  {(isFirstDriver || isFirstPassenger) && (
+                    <Text style={styles.subtitle}>
+                      {item.role === 'driver' ? 'As driver' : 'As passenger'}
+                    </Text>
+                  )}
+                  {renderParty({ item })}
+                </View>
+              );
+            }}
+            contentContainerStyle={styles.scrollContent}
+          />
+        )
       )}
 
 
@@ -249,5 +322,12 @@ const styles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 20,
+  },
+  dangerButton: {
+    backgroundColor: "#ff4d4d",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
   },
 });
