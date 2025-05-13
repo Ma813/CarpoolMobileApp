@@ -330,7 +330,7 @@ namespace Backend.Controllers
             {
                 routesWithNames.Add(new
                 {
-                    Order = optimizedRoute.Count,
+                    Order = optimizedRoute.Count + 1,
                     Longitude = workAddress.work_lon,
                     Latitude = workAddress.work_lat,
                     Usernames = "Work",

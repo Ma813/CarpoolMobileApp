@@ -15,6 +15,7 @@ import Swiper from "react-native-deck-swiper";
 import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
 import api from "@/services/api";
+import { baseurl } from "@/constants/baseurl";
 
 const CreateParty: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
@@ -149,7 +150,7 @@ const CreateParty: React.FC = () => {
                 {colleague.image_path && (
                   <View style={{ marginTop: 10, flex: 1, width: "100%" }}>
                     <Image
-                      source={{ uri: colleague.image_path }}
+                      source={{ uri: baseurl + colleague.image_path }}
                       style={{
                         width: "100%",
                         height: "100%",

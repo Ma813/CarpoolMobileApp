@@ -99,7 +99,7 @@ namespace Backend.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            var imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/{fileName}";
+            var imageUrl = $"/uploads/{fileName}";
             user.ImagePath = imageUrl;
             await _context.SaveChangesAsync();
 

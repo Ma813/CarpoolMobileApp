@@ -19,6 +19,7 @@ import { NavBar } from "../components/NavBar";
 import { getClosestColleagues } from "@/services/addressesApi"; // Import the API call function
 import api from "@/services/api";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { baseurl } from "@/constants/baseurl";
 
 const Party: React.FC = () => {
   const [colleagues, setColleagues] = useState<any[]>([]); // State to store API results
@@ -26,6 +27,7 @@ const Party: React.FC = () => {
   const [range, setRange] = useState<number>(15000); // State to manage search range
   const invitedColleaguesRef = useRef<any[]>([]);
   const [userParties, setUserParties] = useState<any[]>([]);
+  const [passengerParties, setPassengerParties] = useState<any[]>([]);
   const router = useRouter();
   const [invites, setInvites] = useState<any[]>([]);
 const respondToInvite = async (party_id: number, accepted: boolean) => {
@@ -66,9 +68,27 @@ const respondToInvite = async (party_id: number, accepted: boolean) => {
     }
   };
 
+  const GetPassengerParties = async () => {
+    try {
+      const response = await api.get("/party/getPassengerParties");
+      console.log("Passenger parties:", response.data);
+      setPassengerParties(response.data); // Store response in state
+    } catch (error) {
+      console.log("Error fetching passenger parties:", error);
+    }
+  };
+
   useEffect(() => {
     GetUserParties();
+    GetPassengerParties();
   }, []);
+
+  const leaveParty = async (partyId: number) =>
+    await api.delete("/party/leaveParty/" + partyId);
+
+  const deleteParty = async (partyId: number) =>
+    await api.delete("/party/deleteParty/" + partyId);
+
 
   const openCreatePartyPage = () => {
     router.push("/pages/CreateParty");
@@ -81,7 +101,7 @@ const respondToInvite = async (party_id: number, accepted: boolean) => {
       <Text style={styles.colleagueSubText}>🏠 {colleague.home_address}</Text>
       {colleague.image_path ? (
         <Image
-          source={{ uri: colleague.image_path }}
+          source={{ uri: baseurl + colleague.image_path }}
           style={styles.colleagueImage}
         />
       ) : null}
@@ -101,6 +121,71 @@ const respondToInvite = async (party_id: number, accepted: boolean) => {
       ) : (
         <Text style={styles.noMembersText}>No members in this party.</Text>
       )}
+
+      {party.role === "passenger" && (
+        <TouchableOpacity
+          style={styles.dangerButton}
+          onPress={() =>
+            Alert.alert(
+              "Leave Party",
+              "Are you sure you want to leave this party?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Leave",
+                  style: "destructive",
+                  onPress: () => {
+                    leaveParty(party.party_id)
+                      .then(() => {
+                        console.log("Left party successfully");
+                        GetPassengerParties();
+                      })
+                      .catch((error) => {
+                        console.log("Error leaving party:", error);
+                      });
+                  },
+                },
+              ]
+            )
+          }
+        >
+          <Text style={styles.buttonText}>Leave Party</Text>
+        </TouchableOpacity>
+      )}
+
+      {party.role === "driver" && (
+        <TouchableOpacity
+          style={styles.dangerButton}
+          onPress={() =>
+            Alert.alert(
+              "Delete Party",
+              "Are you sure you want to delete this party?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    api
+                      deleteParty(party.party_id)
+                      .then(() => {
+                        console.log("Deleted party successfully");
+                        GetUserParties();
+                      })
+                      .catch((error) => {
+                        console.log("Error deleting party:", error);
+                      });
+                  },
+                },
+              ]
+            )
+          }
+        >
+          <Text style={styles.buttonText}>Delete Party</Text>
+        </TouchableOpacity>
+      )}
+
+
     </View>
   );
 
@@ -146,16 +231,56 @@ const respondToInvite = async (party_id: number, accepted: boolean) => {
           color="#9fbf2a"
           style={styles.loadingIndicator}
         />
-      ) : userParties.length > 0 ? (
-        <FlatList
-          data={userParties}
-          keyExtractor={(party, index) => index.toString()}
-          renderItem={renderParty}
-          contentContainerStyle={styles.scrollContent}
-        />
       ) : (
-        <Text style={styles.emptyText}>No parties found.</Text>
+        userParties.length === 0 && passengerParties.length === 0 ? (
+          <Text style={styles.noMembersText}>No parties found.</Text>
+        ) : (
+          <FlatList
+            data={[...userParties.map(p => ({ ...p, role: 'driver' })), ...passengerParties.map(p => ({ ...p, role: 'passenger' }))]}
+            keyExtractor={(party, index) => index.toString()}
+            renderItem={({ item, index }) => {
+              // Check if this is the first driver or first passenger in the list
+              const allParties = [
+                ...userParties.map(p => ({ ...p, role: 'driver' })),
+                ...passengerParties.map(p => ({ ...p, role: 'passenger' }))
+              ];
+              const isFirstDriver =
+                item.role === 'driver' &&
+                !allParties.slice(0, index).some(p => p.role === 'driver');
+              const isFirstPassenger =
+                item.role === 'passenger' &&
+                !allParties.slice(0, index).some(p => p.role === 'passenger');
+              return (
+                <View>
+                  {(isFirstDriver || isFirstPassenger) && (
+                    <Text style={styles.subtitle}>
+                      {item.role === 'driver' ? 'As driver' : 'As passenger'}
+                    </Text>
+                  )}
+                  {renderParty({ item })}
+                </View>
+              );
+            }}
+            contentContainerStyle={styles.scrollContent}
+          />
+        )
       )}
+
+
+
+      {/* // userParties.length > 0 ? (
+      //   <FlatList
+        //     ListHeaderComponent={
+        //       <Text style={styles.subtitle}>You're driving these</Text>
+        //     }
+        //     data={userParties}
+        //     keyExtractor={(party, index) => index.toString()}
+        //     renderItem={renderParty}
+        //     contentContainerStyle={styles.scrollContent}
+        //   />
+        // ) : (
+        //   <Text style={styles.emptyText}>No parties found.</Text>
+        // )} */}
       <NavBar />
     </View>
   );
@@ -174,6 +299,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
     textAlign: "center",
   },
   button: {
@@ -280,4 +411,11 @@ inviteButtonText: {
   color: "#fff",
   fontWeight: "bold",
 },
+  dangerButton: {
+    backgroundColor: "#ff4d4d",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
 });
