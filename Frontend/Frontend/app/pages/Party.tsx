@@ -27,6 +27,34 @@ const Party: React.FC = () => {
   const invitedColleaguesRef = useRef<any[]>([]);
   const [userParties, setUserParties] = useState<any[]>([]);
   const router = useRouter();
+  const [invites, setInvites] = useState<any[]>([]);
+const respondToInvite = async (party_id: number, accepted: boolean) => {
+  try {
+    await api.post("/party/respondToInvite", {
+      party_id,
+      accepted,
+    });
+    Alert.alert("Success", accepted ? "Invite accepted!" : "Invite declined.");
+    fetchInvites(); // atnaujinti pakvietimų sąrašą
+    GetUserParties(); // atnaujinti savo Party
+  } catch (error) {
+    console.log("Error responding to invite:", error);
+  }
+};
+
+  const fetchInvites = async () => {
+    try {
+      const response = await api.get("/party/getInvites");
+      setInvites(response.data);
+    } catch (error) {
+      console.log("Failed to fetch invites", error);
+    }
+  };
+
+  useEffect(() => {
+    GetUserParties();
+    fetchInvites();
+  }, []);
 
   const GetUserParties = async () => {
     try {
@@ -85,7 +113,33 @@ const Party: React.FC = () => {
         disabled={loading}
       >
         <Text style={styles.buttonText}>Create Party</Text>
-      </TouchableOpacity>
+            </TouchableOpacity>
+            {invites.length > 0 && (
+        <View style={styles.inviteSection}>
+          <Text style={styles.inviteTitle}>Your Invitations</Text>
+          {invites.map((invite, index) => (
+            <View key={index} style={styles.inviteCard}>
+              <Text style={styles.inviteText}>
+                You have been invited to a party by <Text style={{ fontWeight: "bold" }}>{invite.driver_name}</Text>
+              </Text>
+              <View style={styles.inviteButtons}>
+                <TouchableOpacity
+                  style={[styles.inviteButton, { backgroundColor: "#4caf50" }]}
+                  onPress={() => respondToInvite(invite.party_id, true)}
+                >
+                  <Text style={styles.inviteButtonText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.inviteButton, { backgroundColor: "#f44336" }]}
+                  onPress={() => respondToInvite(invite.party_id, false)}
+                >
+                  <Text style={styles.inviteButtonText}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -192,4 +246,38 @@ const styles = StyleSheet.create({
   loadingIndicator: {
     marginTop: 20,
   },
+  inviteSection: {
+  marginBottom: 20,
+},
+inviteTitle: {
+  fontSize: 20,
+  fontWeight: "bold",
+  marginBottom: 10,
+},
+inviteCard: {
+  backgroundColor: "#fff3cd",
+  borderColor: "#ffeeba",
+  borderWidth: 1,
+  borderRadius: 10,
+  padding: 15,
+  marginBottom: 10,
+},
+inviteText: {
+  fontSize: 16,
+  marginBottom: 10,
+},
+inviteButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+},
+inviteButton: {
+  padding: 10,
+  borderRadius: 5,
+  width: "48%",
+  alignItems: "center",
+},
+inviteButtonText: {
+  color: "#fff",
+  fontWeight: "bold",
+},
 });
