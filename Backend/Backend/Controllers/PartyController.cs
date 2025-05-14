@@ -366,6 +366,152 @@ namespace Backend.Controllers
             }
         }
 
+        [Authorize]
+        [HttpGet("getPartyRecommendations")]
+        public async Task<IActionResult> GetPartyRecommendations()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = await _context.Users
+                .Where(u => u.Id == int.Parse(userId))
+                .FirstOrDefaultAsync();
+            Console.WriteLine($"User ID: {userId}");
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var userAddress = await _context.UserAddresses.FirstOrDefaultAsync(a => a.user_id == int.Parse(userId));
+            if (userAddress == null || userAddress.work_lat == null || userAddress.work_lon == null)
+            {
+                return NotFound("User address or coordinates not found");
+            }
+            if (userAddress.work_lat == null || userAddress.work_lon == null ||
+    userAddress.work_lat < -90 || userAddress.work_lat > 90 ||
+    userAddress.work_lon < -180 || userAddress.work_lon > 180)
+            {
+                return BadRequest("Invalid user coordinates");
+            }
+
+
+            var colleagues = await _context.UserAddresses.Where(a => a.user_id != int.Parse(userId) &&
+                a.work_address == userAddress.work_address &&
+                a.work_lat != null &&
+                a.work_lon != null &&
+                a.work_lat >= -90 && a.work_lat <= 90 &&
+                a.work_lon >= -180 && a.work_lon <= 180)
+                .ToListAsync();
+
+            if (colleagues == null || colleagues.Count == 0)
+            {
+                return NotFound("No colleagues found with the same work address and valid coordinates");
+            }
+            var filteredColleagues = new List<UserAddress>();
+
+            foreach (var colleague in colleagues)
+            {
+                var preference = await _context.User_Preferences.FirstOrDefaultAsync(a => a.user_id == int.Parse(userId) && a.other_user_id == colleague.user_id);
+                if (preference == null || preference.liked != false)
+                {
+                    filteredColleagues.Add(colleague);
+                }
+            }
+
+            if (filteredColleagues == null || filteredColleagues.Count == 0)
+            {
+                filteredColleagues = colleagues;
+            }
+
+            // Build coordinates string
+            var coordinates = $"{userAddress.home_lon},{userAddress.home_lat}";
+            foreach (var colleague in filteredColleagues)
+            {
+                coordinates += $";{colleague.home_lon},{colleague.home_lat}";
+            }
+
+            var accessToken = _configuration["Mapbox:AccessToken"];
+            var url = $"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coordinates}?access_token={accessToken}&annotations=distance&sources=0";
+            Console.WriteLine("Mapbox request URL: " + url); // or use ILogger
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonString);
+            var root = jsonDoc.RootElement;
+
+            var distances = root.GetProperty("distances")[0];
+            var result = new List<PartyColleagueDTO>();
+            for (int i = 0; i < filteredColleagues.Count; i++)
+            {
+
+                var c = filteredColleagues[i];
+                var userA = await _context.Users.FindAsync(c.user_id);
+                if (distances[i + 1].GetDouble() < 50000)
+                {
+                    result.Add(new PartyColleagueDTO
+                    {
+                        user_id = c.user_id,
+                        user_name = user?.Username ?? "Unknown",
+                        work_address = c.work_address,
+                        home_address = c.home_address,
+                        work_coordinates = new CoordinatesDto
+                        {
+                            latitude = c.work_lat,
+                            longitude = c.work_lon
+                        },
+                        home_coordinates = new CoordinatesDto
+                        {
+                            latitude = c.home_lat,
+                            longitude = c.home_lon
+                        },
+                        distance = distances[i + 1].GetDouble(),
+                        image_path = user?.ImagePath
+                    });
+                }
+            }
+            if (result.Count == 0 || result == null)
+            {
+                return NotFound("No colleagues found in the given range");
+            }
+
+            var userWorkTimes = await _context.User_Work_Times
+                .Where(uwt => uwt.user_id == user.Id)
+                .ToListAsync();
+            if (userWorkTimes == null || userWorkTimes.Count == 0)
+            {
+                return NotFound("No work times found for the user");
+            }
+
+            var colleagueIds = result.Select(c => c.user_id).ToList();
+            var colleagueWorkTimes = await _context.User_Work_Times
+                .Where(uwt => colleagueIds.Contains(uwt.user_id))
+                .ToListAsync();
+            if (colleagueWorkTimes == null || colleagueWorkTimes.Count == 0)
+            {
+                return NotFound("No colleagues found with work times");
+            }
+
+            var matchingColleagues = result
+                .Where(colleague => colleagueWorkTimes.Any(cwt =>
+                    cwt.user_id == colleague.user_id &&
+                    userWorkTimes.Any(uwt =>
+                        Math.Abs((uwt.start_time - cwt.start_time).TotalMinutes) < 5)))
+                .ToList();
+
+            if (matchingColleagues == null || matchingColleagues.Count == 0)
+            {
+                return NotFound("No colleagues found with matching work times");
+            }
+            return Ok(matchingColleagues);
+        }
+
+
 
         private async Task<string> GetUserName(int userId)
         {
