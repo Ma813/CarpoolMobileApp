@@ -16,12 +16,11 @@ const GoogleNaps = () => {
   });
 
   const [username, setUsername] = useState<string | null>(null);
-  const [summary, setSummary] = useState<any>(null);  // Santrauka duomenims
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigation = useNavigation<any>();
 
-  // Funkcija, kad gauti vartotojo duomenis ir santrauką
   const fetchData = async () => {
     const username = await getData("username");
     setUsername(username);
@@ -29,10 +28,10 @@ const GoogleNaps = () => {
       navigation.navigate("pages/LoginPage");
     } else {
       try {
-        const summaryData = await getUserSummary(); // Užklausa API
+        const summaryData = await getUserSummary();
         setSummary(summaryData);
       } catch (error) {
-        setError("Nepavyko gauti santraukos.");
+        setError("Failed to fetch summary.");
       } finally {
         setLoading(false);
       }
@@ -41,7 +40,7 @@ const GoogleNaps = () => {
 
   useEffect(() => {
     fetchData();
-  }, [username]); // Kviečiame tik tada, kai username pasikeičia
+  }, [username]);
 
   if (!username || loading) {
     return (
@@ -58,33 +57,45 @@ const GoogleNaps = () => {
       <Text style={styles.app_name}>COLLAB.RIDE</Text>
       <Text style={[styles.welcomeText, { textAlign: "center", alignSelf: "center" }]}>Welcome, {username}!</Text>
 
-      {/* Santrauka rodoma tik jei duomenys įkelti */}
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
         <View style={styles.summarySection}>
-          <Text style={styles.summarySectionTitle}>Jūsų aktyvumo santrauka</Text>
+          <Text style={styles.summarySectionTitle}>Your Activity Summary</Text>
+
           <View style={styles.summarySection}>
-            <Text style={styles.summarySectionText}>Bendras važiavimų skaičius: {summary?.total_rides}</Text>
-            <Text style={styles.summarySectionText}>Bendras CO2 emisijos kiekis: {summary?.total_emissions} kg</Text>
-          </View>
-          <View style={styles.summarySection}>
-            <Text style={styles.summarySectionText}>Jūsų paskutinė kelionė:</Text>
             <Text style={styles.summarySectionText}>
-              {summary?.last_ride?.place_name}
+              Total Rides: {summary?.total_rides ?? "None"}
             </Text>
             <Text style={styles.summarySectionText}>
-              Data: {summary?.last_ride?.date}
-            </Text>
-            <Text style={styles.summarySectionText}>
-              CO₂: {summary?.last_ride?.emissions} kg
+              Total CO₂ Emissions: {summary?.total_emissions ?? "None"} kg
             </Text>
           </View>
-          <View style={styles.summarySection}>          
-            <Text style={styles.summarySectionText}>Jūsų daugiausiai lankytinos vietos:</Text>
-          {summary?.top_destinations?.map((destination: any, index: number) => (
-            <Text key={index} style={styles.summarySectionText}>{destination.place_name}</Text>
-          ))}
+
+          <View style={styles.summarySection}>
+            <Text style={styles.summarySectionText}>Your Last Ride:</Text>
+            <Text style={styles.summarySectionText}>
+              {summary?.last_ride?.place_name || "None"}
+            </Text>
+            <Text style={styles.summarySectionText}>
+              Date: {summary?.last_ride?.date || "None"}
+            </Text>
+            <Text style={styles.summarySectionText}>
+              CO₂: {summary?.last_ride?.emissions ?? "None"} kg
+            </Text>
+          </View>
+
+          <View style={styles.summarySection}>
+            <Text style={styles.summarySectionText}>Your Top Destinations:</Text>
+            {summary?.top_destinations?.length > 0 ? (
+              summary.top_destinations.map((destination: any, index: number) => (
+                <Text key={index} style={styles.summarySectionText}>
+                  {destination.place_name || "Unnamed Place"}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.summarySectionText}>None</Text>
+            )}
           </View>
         </View>
       )}
