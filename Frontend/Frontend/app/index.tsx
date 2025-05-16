@@ -1,18 +1,25 @@
 import { styles } from "./styles";
 import { Link, useNavigation } from "expo-router";
 import { removeData, getData } from "@/services/localStorage";
-import { Text, View, Button, Image, KeyboardAvoidingView, ScrollView } from "react-native";
+import {
+  Text,
+  View,
+  Button,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { NavBar } from "./components/NavBar";
-import { useFonts } from 'expo-font';
-import { getUserSummary } from "@/services/api";
+import { useFonts } from "expo-font";
+import api, { getUserSummary } from "@/services/api";
 
 const GoogleNaps = () => {
   const [fontsLoaded] = useFonts({
-    'Gotham': require('@/assets/fonts/Gotham-Black.otf'),
-    'Gotham-Bold': require('@/assets/fonts/Gotham-Bold.otf'),
-    'Gotham-Italic': require('@/assets/fonts/Gotham-BlackItalic.otf'),
-    'Gotham-Light': require('@/assets/fonts/Gotham-Light.otf'),
+    Gotham: require("@/assets/fonts/Gotham-Black.otf"),
+    "Gotham-Bold": require("@/assets/fonts/Gotham-Bold.otf"),
+    "Gotham-Italic": require("@/assets/fonts/Gotham-BlackItalic.otf"),
+    "Gotham-Light": require("@/assets/fonts/Gotham-Light.otf"),
   });
 
   const [username, setUsername] = useState<string | null>(null);
@@ -37,10 +44,22 @@ const GoogleNaps = () => {
       }
     }
   };
+  const getPartyReccomendations = async () => {
+    try {
+      const response = await api.get(`/party/getPartyRecommendations`);
+      console.log("Party recommendations:", response.data);
+    } catch (error) {
+      console.error("Error fetching party recommendations:", error);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, [username]);
+  
+  useEffect(() => {
+    getPartyReccomendations();
+  }, []);
 
   if (!username || loading) {
     return (
@@ -53,16 +72,22 @@ const GoogleNaps = () => {
   return (
     <KeyboardAvoidingView style={styles.container}>
       <NavBar />
-      <Image source={require('@/assets/images/car.png')} style={styles.image} />
+      <Image source={require("@/assets/images/car.png")} style={styles.image} />
       <Text style={styles.app_name}>COLLAB.RIDE</Text>
-      <Text style={[styles.welcomeText, { textAlign: "center", alignSelf: "center" }]}>Welcome, {username}!</Text>
+      <Text
+        style={[
+          styles.welcomeText,
+          { textAlign: "center", alignSelf: "center" },
+        ]}
+      >
+        Welcome, {username}!
+      </Text>
 
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
         <View style={styles.summarySection}>
           <Text style={styles.summarySectionTitle}>Your Activity Summary</Text>
-
           <View style={styles.summarySection}>
             <Text style={styles.summarySectionText}>
               Total Rides: {summary?.total_rides ?? "None"}
@@ -84,7 +109,6 @@ const GoogleNaps = () => {
               CO₂: {summary?.last_ride?.emissions ?? "None"} kg
             </Text>
           </View>
-
           <View style={styles.summarySection}>
             <Text style={styles.summarySectionText}>Your Top Destinations:</Text>
             {summary?.top_destinations?.length > 0 ? (
