@@ -87,18 +87,39 @@ namespace Backend.Controllers
             }
 
             var userCar = await _context.Cars.FirstOrDefaultAsync(c => c.user_id == user.Id);
-            if (destinationDto.mode_of_transport != "car" || userCar == null || userCar.fuel_efficiency == null || userCar.fuel_type == null ||
-            userCar.fuel_efficiency == null || userCar.fuel_efficiency <= 0
-            || (userCar.fuel_type != "Petrol" && userCar.fuel_type != "Diesel"))
+
+
+            if (destinationDto.mode_of_transport == "bicycle" || destinationDto.mode_of_transport == "walk" || destinationDto.mode_of_transport == "bus")
             {
-                destination.co2_emission = distance * 0.08 * 2.31; // Default value for unknown car
-                destination.default_car = true;
+                // For bike or walk, we can assume a default emission value
+                destination.co2_emission = 0;
+                destination.co2_saved = distance * 0.08 * 2.31; // Default value for unknown car
+                destination.default_car = true; // Indicating that no car was used
+            }
+
+            else if (userCar != null && (userCar.fuel_type == "Petrol" || userCar.fuel_type == "Diesel"))
+            {
+                // For car, we calculate the CO2 emission based on fuel efficiency
+                if (userCar.fuel_efficiency == null || userCar.fuel_efficiency <= 0)
+                {
+                    destination.co2_emission = distance * 0.08 * 2.31; // Default value for unknown car
+                    destination.co2_saved = 0;
+                    destination.default_car = true;
+                }
+                else
+                {
+                    var fuelConsumption = userCar.fuel_efficiency / 100 * distance; // in liters
+                    destination.co2_emission = fuelConsumption * (userCar.fuel_type == "Petrol" ? 2.31 : 2.68);
+                    destination.co2_saved = 0;
+                    destination.default_car = false;
+                }
             }
             else
             {
-                var fuelConsumption = userCar.fuel_efficiency / 100 * distance; // in liters
-                destination.co2_emission = fuelConsumption * (userCar.fuel_type == "Petrol" ? 2.31 : 2.68);
-                destination.default_car = false;
+                // If no car or invalid car data, use default values
+                destination.co2_emission = distance * 0.08 * 2.31; // Default value for unknown car
+                destination.co2_saved = 0;
+                destination.default_car = true;
             }
 
             destination.mode_of_transport = destinationDto.mode_of_transport;
@@ -367,7 +388,7 @@ namespace Backend.Controllers
             }
 
             var totalRides = destinations.Count;
-            var totalEmissions = destinations.Sum(d => d.co2_emission);
+            var totalEmissions = destinations.Sum(d => d.co2_saved);
 
             var lastRide = destinations.First(); // Jau surikiuota pagal datą
 
@@ -390,7 +411,7 @@ namespace Backend.Controllers
                     place_name = lastRide.place_name,
                     date = lastRide.date?.ToString("yyyy-MM-dd") ?? "N/A",
                     transport = lastRide.mode_of_transport,
-                    emissions = Math.Round(lastRide.co2_emission ?? 0, 2)
+                    emissions = Math.Round(lastRide.co2_saved ?? 0, 2)
                 },
                 top_destinations = topDestinations
             });

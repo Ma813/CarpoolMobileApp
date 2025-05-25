@@ -53,6 +53,7 @@ const Map = () => {
   const [recentAddresses, setRecentAddresses] = useState<Suggestion[]>([]); // State to store recent addresses
   const [CO2, setCO2] = useState<number | null>(null); // State to store CO2 emissions
   const [carDefault, setCarDefault] = useState<Boolean>(true); // State to store car default
+  const [CO2Saved, setCO2Saved] = useState<number>(0); // State to store CO2 saved
   const [marker, setMarker] = useState<{
     latitude: number;
     longitude: number;
@@ -169,6 +170,7 @@ const Map = () => {
     setMarker(null);
     setDestination(null);
     setCO2(null);
+    setCO2Saved(0);
     setBusLineIndexes([]);
     setBusPolyline([]);
     setTransitDetails([]);
@@ -540,6 +542,7 @@ const Map = () => {
     setMarker({ latitude, longitude });
     setDestination(null);
     setCO2(null); // Reset CO2 emissions when a new marker is placed
+    setCO2Saved(0); // Reset CO2 saved when a new marker is placed
     setCarDefault(true); // Reset car default when a new marker is placed
 
     const address = await getAddressFromCoordinates(latitude, longitude);
@@ -579,6 +582,7 @@ const Map = () => {
 
         const response = await postDestination(trip); // Save the custom marker as a destination
         setCO2(response.co2_emission); // Set CO2 emissions from the response
+        setCO2Saved(response.co2_saved); // Set CO2 saved from the response
         setCarDefault(response.default_car);
       } catch (error) {
         console.error("Error saving address:", error);
@@ -683,7 +687,7 @@ const Map = () => {
         />
       </View>
 
-      {CO2 && (
+      {CO2 !== null && (
         <View
           style={{
             padding: 10,
@@ -692,9 +696,15 @@ const Map = () => {
             alignItems: "center",
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-            CO2 Emissions for trip: {CO2.toFixed(2)} kg
-          </Text>
+
+          <View>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              CO2 Saved: {CO2Saved.toFixed(2)} kg
+            </Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              CO2 Emissions for trip: {CO2.toFixed(2)} kg
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={() =>
               Alert.alert(
@@ -810,102 +820,105 @@ const Map = () => {
         >
           <Text>{toWork ? "Pickup party members to work" : "Drop off party members at home"}</Text>
 
-          <View key={pickupPoints[selectedPickup].order}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons
-                name={pickupPoints[selectedPickup + 1].usernames == "Work" ? "briefcase" :
-                  pickupPoints[selectedPickup + 1].usernames == "Home" ? "home" : pickupPoints[selectedPickup + 1].usernames.includes(",") ? "people" : "person"}
-                size={16}
-                color="black"
-                style={{ marginRight: 5 }}
-              />
-              <Text style={styles.label}>
-                {pickupPoints[selectedPickup + 1].usernames}
-              </Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons
-                name="business"
-                size={16}
-                color="black"
-                style={{ marginRight: 5 }}
-              />
-              <Text style={styles.label}>
-                {pickupPoints[selectedPickup + 1].address}
-              </Text>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                marginTop: 10,
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.infoButton,
-                  selectedPickup === 0 && styles.greyedOut,
-                ]}
-                onPress={() => {
-                  setSelectedPickup((prevIndex) => {
-                    const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
-                    return newIndex;
-                  });
-                }}
-              >
-                <Text>{"<"}</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.infoText}>
-                {/* we are skipping the first one, because we're starting at current location */}
-                {selectedPickup + 1} / {pickupPoints.length - 1}
-              </Text>
-
-              <TouchableOpacity
-                style={[
-                  styles.infoButton,
-                  selectedPickup === pickupPoints.length - 2 && styles.greyedOut,
-                ]}
-                onPress={() => {
-                  setSelectedPickup((prevIndex) => {
-                    const newIndex = prevIndex === pickupPoints.length - 2 ? prevIndex : prevIndex + 1;
-                    return newIndex;
-                  });
-                }}
-              >
-                <Text>{">"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 }}>
-              <TouchableOpacity style={styles.button}
-                onPress={() => {
-                  setToWork(!toWork);
-                  setSelectedPickup(0);
-                  setPickupPoints((prevPoints) =>
-                    prevPoints.map((point) => ({
-                      ...point,
-                      order: prevPoints.length - 1 - point.order, // Swap the order of the points
-                    })));
-
-                  fetchPickupRoute();
-
-                }}
-              >
+          {pickupPoints[selectedPickup + 1] && (
+            <View key={pickupPoints[selectedPickup].order}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Ionicons
-                  name={toWork ? "home" : "briefcase"}
-                  size={20}
-                  color="white"
+                  name={pickupPoints[selectedPickup + 1].usernames == "Work" ? "briefcase" :
+                    pickupPoints[selectedPickup + 1].usernames == "Home" ? "home" : pickupPoints[selectedPickup + 1].usernames.includes(",") ? "people" : "person"}
+                  size={16}
+                  color="black"
+                  style={{ marginRight: 5 }}
                 />
-              </TouchableOpacity>
+                <Text style={styles.label}>
+                  {pickupPoints[selectedPickup + 1].usernames}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons
+                  name="business"
+                  size={16}
+                  color="black"
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={styles.label}>
+                  {pickupPoints[selectedPickup + 1].address}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginTop: 10,
+                }}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.infoButton,
+                    selectedPickup === 0 && styles.greyedOut,
+                  ]}
+                  onPress={() => {
+                    setSelectedPickup((prevIndex) => {
+                      const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
+                      return newIndex;
+                    });
+                  }}
+                >
+                  <Text>{"<"}</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.infoText}>
+                  {/* we are skipping the first one, because we're starting at current location */}
+                  {selectedPickup + 1} / {pickupPoints.length - 1}
+                </Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.infoButton,
+                    selectedPickup === pickupPoints.length - 2 && styles.greyedOut,
+                  ]}
+                  onPress={() => {
+                    setSelectedPickup((prevIndex) => {
+                      const newIndex = prevIndex === pickupPoints.length - 2 ? prevIndex : prevIndex + 1;
+                      return newIndex;
+                    });
+                  }}
+                >
+                  <Text>{">"}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 }}>
+                <TouchableOpacity style={styles.button}
+                  onPress={() => {
+                    setToWork(!toWork);
+                    setSelectedPickup(0);
+                    setPickupPoints((prevPoints) =>
+                      prevPoints.map((point) => ({
+                        ...point,
+                        order: prevPoints.length - 1 - point.order, // Swap the order of the points
+                      })));
+
+                    fetchPickupRoute();
+
+                  }}
+                >
+                  <Ionicons
+                    name={toWork ? "home" : "briefcase"}
+                    size={20}
+                    color="white"
+                  />
+                </TouchableOpacity>
+
+              </View>
 
             </View>
-
-          </View>
+          )}
         </View>
       )}
+
 
 
       <MapView
@@ -972,7 +985,7 @@ const Map = () => {
           />
         )}
 
-        {pickupPoints.length > 1 && selectedPickup < pickupPoints.length && (
+        {pickupPoints.length > 1 && selectedPickup < pickupPoints.length && pickupPoints[selectedPickup + 1] && (
           <Marker
             ref={markerRef}
             coordinate={{

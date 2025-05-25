@@ -93,7 +93,7 @@ const GoogleNaps = () => {
               Total Rides: {summary?.total_rides ?? "None"}
             </Text>
             <Text style={styles.summarySectionText}>
-              Total CO₂ Emissions: {summary?.total_emissions ?? "None"} kg
+              Total CO₂ Saved: {summary?.total_emissions ?? "None"} kg
             </Text>
           </View>
 
@@ -106,7 +106,7 @@ const GoogleNaps = () => {
               Date: {summary?.last_ride?.date || "None"}
             </Text>
             <Text style={styles.summarySectionText}>
-              CO₂: {summary?.last_ride?.emissions ?? "None"} kg
+              CO₂ saved: {summary?.last_ride?.emissions ?? "None"} kg
             </Text>
           </View>
           <View style={styles.summarySection}>
