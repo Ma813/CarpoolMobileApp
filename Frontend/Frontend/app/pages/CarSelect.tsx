@@ -82,8 +82,8 @@ const CarSelectPage: React.FC = () => {
       })).filter((make: any) => make.value);
       setAllBrands(formattedMakes);
     } catch (error) {
-      console.error("Error fetching car makes:", error);
-      alert("Failed to fetch car makes.");
+      console.log("Error fetching car makes:", error);
+      alert("Failed to fetch car makes. NHTSA API might be down.");
     }
   };
 

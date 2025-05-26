@@ -235,16 +235,34 @@ namespace Backend.Controllers
             }
 
             int memberCount = await _context.Party_Members
-                .Where(m => m.party_id == party.party.Id)
+                .Where(m => m.party_id == party.party.Id && m.accepted)
                 .CountAsync();
 
             if (memberCount <= 1)
             {
-                return BadRequest("Not enough members in the party");
+                // If there are no passengers, return the user's home address and work address only
+                var work = await _context.UserAddresses
+                    .Where(a => a.user_id == int.Parse(userId))
+                    .Select(a => new { a.work_lat, a.work_lon, a.work_address })
+                    .FirstOrDefaultAsync();
+                if (work != null)
+                {
+                    routesWithNames.Add(new
+                    {
+                        Order = 1,
+                        Longitude = work.work_lon,
+                        Latitude = work.work_lat,
+                        Usernames = "Work",
+                        Address = work.work_address
+                    });
+                }
+
+
+                return Ok(routesWithNames);
             }
 
             var members = await _context.Party_Members
-                .Where(m => m.party_id == party.party.Id && m.role == "passenger")
+                .Where(m => m.party_id == party.party.Id && m.role == "passenger" && m.accepted)
                 .Select(m => new { m.user_id })
                 .ToListAsync();
 
@@ -288,8 +306,10 @@ namespace Backend.Controllers
                 .OrderBy(wp => wp.Order)
                 .ToList();
 
+            // This part checks if two users live at the same address (or very close) and combines them into one waypoint.
+            // It groups waypoints by rounded latitude and longitude to avoid duplicates.
             var optimizedNoDuplicates = optimizedRoute
-                .GroupBy(x => new { x.Latitude, x.Longitude })
+                .GroupBy(x => new { RoundedLatitude = Math.Round(x.Latitude, 4), RoundedLongtitude = Math.Round(x.Longitude, 4) })
                 .Select(g =>
                 {
                     var first = g.First();
@@ -304,7 +324,7 @@ namespace Backend.Controllers
                 .OrderBy(wp => wp.Order)
                 .ToList();
 
-            System.Console.WriteLine("Passengers: " + JsonSerializer.Serialize(passengers));
+            System.Console.WriteLine("Passengers: " + JsonSerializer.Serialize(optimizedNoDuplicates));
             foreach (var route in optimizedNoDuplicates)
             {
                 System.Console.WriteLine("Route: " + JsonSerializer.Serialize(route));
@@ -394,7 +414,8 @@ namespace Backend.Controllers
 
             var topDestinations = destinations
                 .GroupBy(d => d.place_name)
-                .Select(g => new {
+                .Select(g => new
+                {
                     place_name = g.Key,
                     count = g.Count()
                 })
