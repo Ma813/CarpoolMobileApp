@@ -157,7 +157,11 @@ const CreateParty: React.FC = () => {
           style={styles.input}
           keyboardType="numeric"
           placeholder="Enter maximum range to find colleagues"
-          onChangeText={(text) => setRange(Number(text))}
+          onChangeText={(text) => {
+            // Replace comma with dot and remove non-numeric except dot
+            const sanitized = text.replace(",", ".").replace(/[^0-9.]/g, "");
+            setRange(Number(sanitized));
+          }}
         />
 
         {/* Swiper for colleagues */}
