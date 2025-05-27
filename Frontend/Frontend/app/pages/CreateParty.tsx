@@ -83,16 +83,27 @@ const CreateParty: React.FC = () => {
   const router = useRouter();
   const handleSwipedAll = async () => {
     console.log("All cards swiped");
-    Alert.alert("All cards swiped", "You have swiped all colleagues.", [
-      {
-        text: "OK",
-        onPress: () => router.push("/pages/Party"),
-      },
-    ]);
+
+    const invited = invitedColleaguesRef.current;
+    if (invited.length === 0) {
+      Alert.alert(
+        "No colleagues selected",
+        "You need to swipe right on at least one colleague to create a party.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/pages/Party"),
+          },
+        ]
+      );
+      return;
+    }
+
     try {
       const response = await api.post("/party/createParty");
-      console.log("Party sent successfully:", response.data);
-      for (const colleague of invitedColleaguesRef.current) {
+      console.log("Party created:", response.data);
+
+      for (const colleague of invited) {
         const postData = {
           party_id: response.data.id,
           accepted: false,
@@ -100,12 +111,26 @@ const CreateParty: React.FC = () => {
           role: "passenger",
         };
         try {
-          const response = await api.post("/party/addPartyMember", postData);
-          console.log("Colleague invited successfully:", response.data);
+          const inviteResponse = await api.post(
+            "/party/addPartyMember",
+            postData
+          );
+          console.log("Colleague invited:", inviteResponse.data);
         } catch (error) {
           console.log("Error inviting colleague:", error);
         }
       }
+
+      Alert.alert(
+        "Party created",
+        "Your party has been created successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/pages/Party"),
+          },
+        ]
+      );
     } catch (error) {
       console.log("Error creating party:", error);
     }
