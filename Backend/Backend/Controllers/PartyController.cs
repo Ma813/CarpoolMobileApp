@@ -120,6 +120,17 @@ namespace Backend.Controllers
                     .Where(pm => pm.party_id == party.Id && pm.accepted)
                     .ToListAsync();
 
+                var userAddress = await _context.UserAddresses.FirstOrDefaultAsync(a => a.user_id == int.Parse(userId));
+                if (userAddress == null || userAddress.work_lat == null || userAddress.work_lon == null)
+                {
+                    return NotFound("User address or coordinates not found");
+                }
+                if (userAddress.work_lat == null || userAddress.work_lon == null ||
+        userAddress.work_lat < -90 || userAddress.work_lat > 90 ||
+        userAddress.work_lon < -180 || userAddress.work_lon > 180)
+                {
+                    return BadRequest("Invalid user coordinates");
+                }
                 foreach (var member in members)
                 {
                     // Skip the driver if you only want to include colleagues
@@ -149,6 +160,7 @@ namespace Backend.Controllers
                             longitude = userAddresses.home_lon
                         },
                         image_path = user.ImagePath,
+                        distance = await GetDistance(userAddress.home_lat, userAddress.home_lon, userAddresses.home_lat, userAddresses.home_lon)
                     });
                 }
 
@@ -457,7 +469,7 @@ namespace Backend.Controllers
                     result.Add(new PartyColleagueDTO
                     {
                         user_id = c.user_id,
-                        user_name = user?.Username ?? "Unknown",
+                        user_name = userA?.Username ?? "Unknown",
                         work_address = c.work_address,
                         home_address = c.home_address,
                         work_coordinates = new CoordinatesDto
@@ -510,8 +522,29 @@ namespace Backend.Controllers
             }
             return Ok(matchingColleagues);
         }
+        [HttpPost("getDistance")]
+        public async Task<double> GetDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            var coordinates = $"{lon1},{lat1}";
+            coordinates += $";{lon2},{lat2}";
 
+            var accessToken = _configuration["Mapbox:AccessToken"];
+            var url = $"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coordinates}?access_token={accessToken}&annotations=distance&sources=0";
+            Console.WriteLine("Mapbox request URL: " + url); // or use ILogger
 
+            using var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(jsonString);
+            var root = jsonDoc.RootElement;
+
+            var distances = root.GetProperty("distances")[0];
+            return distances[1].ValueKind == JsonValueKind.Number
+                ? distances[1].GetDouble()
+                : 0;
+        }
 
         private async Task<string> GetUserName(int userId)
         {
