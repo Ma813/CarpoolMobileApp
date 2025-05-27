@@ -28,10 +28,8 @@ import {
 import { fetchOptimalPickup } from "@/services/addressesApi";
 import { getModeOfTransport } from "@/services/modeOfTransportApi";
 import { Ionicons } from "@expo/vector-icons";
-import PopUpSelect from '../components/PopUpSelect';
-
-
-
+import PopUpSelect from "../components/PopUpSelect";
+import GoogleMapsButton from "../components/GoogleMapsButton";
 
 const Map = () => {
   const mapRef = React.useRef<MapView>(null);
@@ -64,19 +62,24 @@ const Map = () => {
     key: string;
     icon: "car-outline" | "walk-outline" | "bicycle-outline" | "bus-outline";
   }[] = [
-      { key: "car", icon: "car-outline" },
-      { key: "walk", icon: "walk-outline" },
-      { key: "bicycle", icon: "bicycle-outline" },
-      { key: "bus", icon: "bus-outline" },
-    ];
+    { key: "car", icon: "car-outline" },
+    { key: "walk", icon: "walk-outline" },
+    { key: "bicycle", icon: "bicycle-outline" },
+    { key: "bus", icon: "bus-outline" },
+  ];
 
   const [pickupPoints, setPickupPoints] = useState<
-    { latitude: number; longitude: number; order: number, usernames: string, address: string }[]
+    {
+      latitude: number;
+      longitude: number;
+      order: number;
+      usernames: string;
+      address: string;
+    }[]
   >([]);
 
   const [selectedPickup, setSelectedPickup] = useState<number>(0);
   const [toWork, setToWork] = useState<boolean>(true); // State to track if the user is going to work or home
-
 
   const [transitDetails, setTransitDetails] = useState<
     {
@@ -100,20 +103,17 @@ const Map = () => {
 
   const [busStops, setBusStops] = useState<string[]>([]); // State to store bus stops
 
-
   const markerRef = React.useRef<MapMarker>(null);
 
   useEffect(() => {
     // Automatically show callout for selected marker
     if (markerRef.current) {
-
       markerRef.current?.showCallout();
     }
   }, [selectedPickup]);
   useEffect(() => {
     // Automatically show callout for selected marker
     if (markerRef.current) {
-
       setTimeout(() => {
         markerRef.current?.showCallout();
       }, 500); // Delay to ensure the map is fully loadeds
@@ -126,7 +126,9 @@ const Map = () => {
   }
 
   const [popupVisible, setPopupVisible] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<PartyOption | null>(null);
+  const [selectedOption, setSelectedOption] = useState<PartyOption | null>(
+    null
+  );
   const [options, setOptions] = useState<PartyOption[]>([]);
 
   const handleSelect = (option: PartyOption) => {
@@ -204,8 +206,12 @@ const Map = () => {
 
     var skip = selectedPickup === 0 ? 0 : 1;
 
-    const origin = `${allPoints[selectedPickup + skip].longitude},${allPoints[selectedPickup + skip].latitude}`;
-    const dest = `${allPoints[selectedPickup + 2].longitude},${allPoints[selectedPickup + 2].latitude}`;
+    const origin = `${allPoints[selectedPickup + skip].longitude},${
+      allPoints[selectedPickup + skip].latitude
+    }`;
+    const dest = `${allPoints[selectedPickup + 2].longitude},${
+      allPoints[selectedPickup + 2].latitude
+    }`;
     const coordinatesStr = `${origin};${dest}`;
 
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesStr}?geometries=geojson&access_token=${accessToken}&overview=full`;
@@ -233,6 +239,35 @@ const Map = () => {
       console.error("Error fetching pickup route:", error);
     }
   };
+
+  function buildGoogleMapsLinkFromStops(
+    stops: {
+      latitude: number;
+      longitude: number;
+      order: number;
+    }[]
+  ): string {
+    if (stops.length < 2) return "";
+
+    // Sort by order
+    const sorted = [...stops].sort((a, b) => a.order - b.order);
+
+    const origin = sorted[0];
+    const destination = sorted[sorted.length - 1];
+    const waypoints = sorted.slice(1, sorted.length - 1); // exclude origin and destination
+
+    const base = "https://www.google.com/maps/dir/?api=1";
+    const originStr = `origin=${origin.latitude},${origin.longitude}`;
+    const destinationStr = `destination=${destination.latitude},${destination.longitude}`;
+    const waypointsStr =
+      waypoints.length > 0
+        ? `&waypoints=${waypoints
+            .map((wp) => `${wp.latitude},${wp.longitude}`)
+            .join("|")}`
+        : "";
+
+    return `${base}&${originStr}&${destinationStr}${waypointsStr}`;
+  }
 
   // Fetch the current location of the device
   const fetchCurrentLocation = () => {
@@ -294,7 +329,6 @@ const Map = () => {
 
       return [];
     });
-
   }, [selectedMode]);
 
   useEffect(() => {
@@ -380,7 +414,6 @@ const Map = () => {
         const response = await fetch(url);
         const data = await response.json();
 
-
         if (data.routes.length) {
           //This turns the code into a clusterfuck
           // We could just setBusLineIndexes([]) but it is synchronous and ususally
@@ -397,7 +430,10 @@ const Map = () => {
                   if (busLineIndexes.length === 0) {
                     busLineIndexes.push(0);
                   }
-                  busLineIndexes.push(busLineIndexes[busLineIndexes.length - 1] + decodedPolyline.length);
+                  busLineIndexes.push(
+                    busLineIndexes[busLineIndexes.length - 1] +
+                      decodedPolyline.length
+                  );
                   setBusLineIndexes(busLineIndexes);
                   console.log("Bus line indexes:", busLineIndexes);
                   return decodedPolyline;
@@ -433,8 +469,12 @@ const Map = () => {
                   }
 
                   if (step.travel_mode === "TRANSIT" && step.transit_details) {
-                    const { departure_stop, arrival_stop, line, departure_time } =
-                      step.transit_details;
+                    const {
+                      departure_stop,
+                      arrival_stop,
+                      line,
+                      departure_time,
+                    } = step.transit_details;
                     const busStop1 = departure_stop.name;
                     const busStop2 = arrival_stop.name;
                     if (!skip)
@@ -465,24 +505,38 @@ const Map = () => {
               if (coordinates.length && mapRef.current) {
                 if (selectedMode !== "bus") {
                   mapRef.current.fitToCoordinates(coordinates, {
-                    edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                    edgePadding: {
+                      top: 100,
+                      right: 100,
+                      bottom: 100,
+                      left: 100,
+                    },
                     animated: true,
                   });
                 }
                 if (selectedMode === "bus" && busPolyline.length > 0) {
-                  mapRef.current && mapRef.current.fitToCoordinates(busPolyline.slice(busLineIndexes[infoIndex], busLineIndexes[infoIndex + 1] + 1), {
-                    edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-                    animated: true,
-                  });
+                  mapRef.current &&
+                    mapRef.current.fitToCoordinates(
+                      busPolyline.slice(
+                        busLineIndexes[infoIndex],
+                        busLineIndexes[infoIndex + 1] + 1
+                      ),
+                      {
+                        edgePadding: {
+                          top: 100,
+                          right: 100,
+                          bottom: 100,
+                          left: 100,
+                        },
+                        animated: true,
+                      }
+                    );
                 }
               }
             }
 
             return busLineIndexes;
           });
-
-
-
         } else {
           console.warn("No routes found in Google response");
         }
@@ -595,16 +649,15 @@ const Map = () => {
   // Insert logic for defaultRegion before return
   const defaultRegion = currentLocation
     ? {
-      latitude: currentLocation.latitude,
-      longitude: currentLocation.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }
     : undefined;
 
   return (
     <View style={styles.container}>
-
       <PopUpSelect
         title="Select a party"
         visible={popupVisible}
@@ -612,7 +665,6 @@ const Map = () => {
         onSelect={(option) => handleSelect(option)}
         onClose={() => setPopupVisible(false)}
       />
-
 
       <View style={styles.navBarContainer}>
         <NavBar />
@@ -696,7 +748,6 @@ const Map = () => {
             alignItems: "center",
           }}
         >
-
           <View>
             <Text style={{ fontSize: 16, fontWeight: "bold" }}>
               CO2 Saved: {CO2Saved.toFixed(2)} kg
@@ -710,9 +761,9 @@ const Map = () => {
               Alert.alert(
                 "CO2 Emissions Info",
                 `This value represents the estimated CO2 emissions for the trip based on the selected route.\n\n` +
-                (carDefault
-                  ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
-                  : "The calculation is based on your car.")
+                  (carDefault
+                    ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
+                    : "The calculation is based on your car.")
               )
             }
             style={{
@@ -729,6 +780,22 @@ const Map = () => {
           </TouchableOpacity>
         </View>
       )}
+      {currentLocation && destination && (
+        <GoogleMapsButton
+          origin={currentLocation}
+          destination={destination}
+          label="Open Route in Google Maps"
+          travelMode={
+            selectedMode === "walk"
+              ? "walking"
+              : selectedMode === "bicycle"
+              ? "bicycling"
+              : selectedMode === "bus"
+              ? "transit"
+              : "driving"
+          }
+        />
+      )}
       {selectedMode === "bus" && transitDetails.length > 0 && (
         <View style={{ padding: 10, backgroundColor: "white" }}>
           <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 5 }}>
@@ -737,7 +804,9 @@ const Map = () => {
           <View style={{ marginBottom: 8 }}>
             {transitDetails[infoIndex].type === "bus" ? (
               <>
-                <Text>🕐 Departure: {transitDetails[infoIndex].departureTime}</Text>
+                <Text>
+                  🕐 Departure: {transitDetails[infoIndex].departureTime}
+                </Text>
                 <Text>🚏 From: {transitDetails[infoIndex].from}</Text>
                 <Text>🚌 Bus: {transitDetails[infoIndex].bus}</Text>
                 <Text>➡️ To: {transitDetails[infoIndex].to}</Text>
@@ -746,7 +815,8 @@ const Map = () => {
               <>
                 <Text>🚶 Walk: {transitDetails[infoIndex].instructions}</Text>
                 <Text>
-                  🗺 Distance: {transitDetails[infoIndex].distance} ({transitDetails[infoIndex].duration})
+                  🗺 Distance: {transitDetails[infoIndex].distance} (
+                  {transitDetails[infoIndex].duration})
                 </Text>
               </>
             )}
@@ -756,170 +826,233 @@ const Map = () => {
                 justifyContent: "center",
                 alignItems: "center",
                 marginTop: 10,
-              }}>
-              {<TouchableOpacity
-                style={[styles.infoButton, infoIndex === 0 && styles.greyedOut]}
-                onPress={() => {
-                  setInfoIndex((prevIndex) => {
-                    const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
-                    if (mapRef.current && busPolyline.length > 0) {
-                      mapRef.current.fitToCoordinates(
-                        busPolyline.slice(busLineIndexes[newIndex], busLineIndexes[newIndex + 1] + 1),
-                        {
-                          edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-                          animated: true,
-                        }
-                      );
-                    }
-                    return newIndex;
-                  }
-                  );
-                }}
-              >
-                <Text style={{ color: "white", fontWeight: "bold" }}>{"<"}</Text>
-              </TouchableOpacity>}
+              }}
+            >
+              {
+                <TouchableOpacity
+                  style={[
+                    styles.infoButton,
+                    infoIndex === 0 && styles.greyedOut,
+                  ]}
+                  onPress={() => {
+                    setInfoIndex((prevIndex) => {
+                      const newIndex =
+                        prevIndex === 0 ? prevIndex : prevIndex - 1;
+                      if (mapRef.current && busPolyline.length > 0) {
+                        mapRef.current.fitToCoordinates(
+                          busPolyline.slice(
+                            busLineIndexes[newIndex],
+                            busLineIndexes[newIndex + 1] + 1
+                          ),
+                          {
+                            edgePadding: {
+                              top: 100,
+                              right: 100,
+                              bottom: 100,
+                              left: 100,
+                            },
+                            animated: true,
+                          }
+                        );
+                      }
+                      return newIndex;
+                    });
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {"<"}
+                  </Text>
+                </TouchableOpacity>
+              }
 
-              <Text
-                style={styles.infoText}>
+              <Text style={styles.infoText}>
                 {infoIndex + 1} / {transitDetails.length}
               </Text>
-              {<TouchableOpacity
-                style={[styles.infoButton, infoIndex === transitDetails.length - 1 && styles.greyedOut]}
-                onPress={() => {
-                  setInfoIndex((prevIndex) => {
-                    const newIndex = prevIndex === transitDetails.length - 1 ? prevIndex : prevIndex + 1;
+              {
+                <TouchableOpacity
+                  style={[
+                    styles.infoButton,
+                    infoIndex === transitDetails.length - 1 && styles.greyedOut,
+                  ]}
+                  onPress={() => {
+                    setInfoIndex((prevIndex) => {
+                      const newIndex =
+                        prevIndex === transitDetails.length - 1
+                          ? prevIndex
+                          : prevIndex + 1;
 
-                    if (mapRef.current && busPolyline.length > 0) {
-                      mapRef.current.fitToCoordinates(
-                        busPolyline.slice(busLineIndexes[newIndex], busLineIndexes[newIndex + 1] + 1),
-                        {
-                          edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-                          animated: true,
-                        }
-                      );
-                    }
+                      if (mapRef.current && busPolyline.length > 0) {
+                        mapRef.current.fitToCoordinates(
+                          busPolyline.slice(
+                            busLineIndexes[newIndex],
+                            busLineIndexes[newIndex + 1] + 1
+                          ),
+                          {
+                            edgePadding: {
+                              top: 100,
+                              right: 100,
+                              bottom: 100,
+                              left: 100,
+                            },
+                            animated: true,
+                          }
+                        );
+                      }
 
-                    return newIndex;
-                  });
-                }}
-              >
-                <Text style={{ color: "white", fontWeight: "bold" }}>{">"}</Text>
-              </TouchableOpacity>}
+                      return newIndex;
+                    });
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {">"}
+                  </Text>
+                </TouchableOpacity>
+              }
             </View>
-
           </View>
         </View>
       )}
 
-      {pickupPoints.length > 0 && (
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 10,
-          }}
-        >
-          <Text>{toWork ? "Pickup party members to work" : "Drop off party members at home"}</Text>
+      {pickupPoints.length > 1 && (
+        <>
+          <View
+            style={{
+              backgroundColor: "white",
+              padding: 10,
+            }}
+          >
+            <Text>
+              {toWork
+                ? "Pickup party members to work"
+                : "Drop off party members at home"}
+            </Text>
 
-          {pickupPoints[selectedPickup + 1] && (
-            <View key={pickupPoints[selectedPickup].order}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons
-                  name={pickupPoints[selectedPickup + 1].usernames == "Work" ? "briefcase" :
-                    pickupPoints[selectedPickup + 1].usernames == "Home" ? "home" : pickupPoints[selectedPickup + 1].usernames.includes(",") ? "people" : "person"}
-                  size={16}
-                  color="black"
-                  style={{ marginRight: 5 }}
-                />
-                <Text style={styles.label}>
-                  {pickupPoints[selectedPickup + 1].usernames}
-                </Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons
-                  name="business"
-                  size={16}
-                  color="black"
-                  style={{ marginRight: 5 }}
-                />
-                <Text style={styles.label}>
-                  {pickupPoints[selectedPickup + 1].address}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginTop: 10,
-                }}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.infoButton,
-                    selectedPickup === 0 && styles.greyedOut,
-                  ]}
-                  onPress={() => {
-                    setSelectedPickup((prevIndex) => {
-                      const newIndex = prevIndex === 0 ? prevIndex : prevIndex - 1;
-                      return newIndex;
-                    });
-                  }}
-                >
-                  <Text>{"<"}</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.infoText}>
-                  {/* we are skipping the first one, because we're starting at current location */}
-                  {selectedPickup + 1} / {pickupPoints.length - 1}
-                </Text>
-
-                <TouchableOpacity
-                  style={[
-                    styles.infoButton,
-                    selectedPickup === pickupPoints.length - 2 && styles.greyedOut,
-                  ]}
-                  onPress={() => {
-                    setSelectedPickup((prevIndex) => {
-                      const newIndex = prevIndex === pickupPoints.length - 2 ? prevIndex : prevIndex + 1;
-                      return newIndex;
-                    });
-                  }}
-                >
-                  <Text>{">"}</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 }}>
-                <TouchableOpacity style={styles.button}
-                  onPress={() => {
-                    setToWork(!toWork);
-                    setSelectedPickup(0);
-                    setPickupPoints((prevPoints) =>
-                      prevPoints.map((point) => ({
-                        ...point,
-                        order: prevPoints.length - 1 - point.order, // Swap the order of the points
-                      })));
-
-                    fetchPickupRoute();
-
-                  }}
-                >
+            {pickupPoints[selectedPickup + 1] && (
+              <View key={pickupPoints[selectedPickup].order}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Ionicons
-                    name={toWork ? "home" : "briefcase"}
-                    size={20}
-                    color="white"
+                    name={
+                      pickupPoints[selectedPickup + 1].usernames == "Work"
+                        ? "briefcase"
+                        : pickupPoints[selectedPickup + 1].usernames == "Home"
+                        ? "home"
+                        : pickupPoints[selectedPickup + 1].usernames.includes(
+                            ","
+                          )
+                        ? "people"
+                        : "person"
+                    }
+                    size={16}
+                    color="black"
+                    style={{ marginRight: 5 }}
                   />
-                </TouchableOpacity>
+                  <Text style={styles.label}>
+                    {pickupPoints[selectedPickup + 1].usernames}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Ionicons
+                    name="business"
+                    size={16}
+                    color="black"
+                    style={{ marginRight: 5 }}
+                  />
+                  <Text style={styles.label}>
+                    {pickupPoints[selectedPickup + 1].address}
+                  </Text>
+                </View>
 
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 10,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.infoButton,
+                      selectedPickup === 0 && styles.greyedOut,
+                    ]}
+                    onPress={() => {
+                      setSelectedPickup((prevIndex) => {
+                        const newIndex =
+                          prevIndex === 0 ? prevIndex : prevIndex - 1;
+                        return newIndex;
+                      });
+                    }}
+                  >
+                    <Text>{"<"}</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.infoText}>
+                    {/* we are skipping the first one, because we're starting at current location */}
+                    {selectedPickup + 1} / {pickupPoints.length - 1}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.infoButton,
+                      selectedPickup === pickupPoints.length - 2 &&
+                        styles.greyedOut,
+                    ]}
+                    onPress={() => {
+                      setSelectedPickup((prevIndex) => {
+                        const newIndex =
+                          prevIndex === pickupPoints.length - 2
+                            ? prevIndex
+                            : prevIndex + 1;
+                        return newIndex;
+                      });
+                    }}
+                  >
+                    <Text>{">"}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 10,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => {
+                      setToWork(!toWork);
+                      setSelectedPickup(0);
+                      setPickupPoints((prevPoints) =>
+                        prevPoints.map((point) => ({
+                          ...point,
+                          order: prevPoints.length - 1 - point.order, // Swap the order of the points
+                        }))
+                      );
+
+                      fetchPickupRoute();
+                    }}
+                  >
+                    <Ionicons
+                      name={toWork ? "home" : "briefcase"}
+                      size={20}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
-
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+          <GoogleMapsButton
+            origin={pickupPoints[0]}
+            destination={pickupPoints[pickupPoints.length - 1]}
+            waypoints={pickupPoints.slice(1, pickupPoints.length - 1)}
+            travelMode="driving"
+            label="Open Full Route in Google Maps"
+          />
+        </>
       )}
-
-
 
       <MapView
         ref={mapRef}
@@ -940,18 +1073,22 @@ const Map = () => {
         )}
 
         {/* Route Polyline */}
-        {routeCoordinates.length > 0 && (selectedMode !== "bus" || pickupPoints.length > 0) && (
-          <Polyline
-            coordinates={routeCoordinates}
-            strokeColor="red"
-            strokeWidth={4}
-          />
-        )}
+        {routeCoordinates.length > 0 &&
+          (selectedMode !== "bus" || pickupPoints.length > 0) && (
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeColor="red"
+              strokeWidth={4}
+            />
+          )}
 
         {selectedMode === "bus" && busPolyline.length > 0 && (
           <>
             <Polyline
-              coordinates={busPolyline.slice(busLineIndexes[infoIndex], busLineIndexes[infoIndex + 1] + 1)}
+              coordinates={busPolyline.slice(
+                busLineIndexes[infoIndex],
+                busLineIndexes[infoIndex + 1] + 1
+              )}
               strokeColor="green"
               strokeWidth={4}
             />
@@ -985,19 +1122,20 @@ const Map = () => {
           />
         )}
 
-        {pickupPoints.length > 1 && selectedPickup < pickupPoints.length && pickupPoints[selectedPickup + 1] && (
-          <Marker
-            ref={markerRef}
-            coordinate={{
-              latitude: pickupPoints[selectedPickup + 1].latitude,
-              longitude: pickupPoints[selectedPickup + 1].longitude,
-            }}
-            title={pickupPoints[selectedPickup + 1].usernames}
-            description={pickupPoints[selectedPickup + 1].address}
-            pinColor="red"
-          />
-        )}
-
+        {pickupPoints.length > 1 &&
+          selectedPickup < pickupPoints.length &&
+          pickupPoints[selectedPickup + 1] && (
+            <Marker
+              ref={markerRef}
+              coordinate={{
+                latitude: pickupPoints[selectedPickup + 1].latitude,
+                longitude: pickupPoints[selectedPickup + 1].longitude,
+              }}
+              title={pickupPoints[selectedPickup + 1].usernames}
+              description={pickupPoints[selectedPickup + 1].address}
+              pinColor="red"
+            />
+          )}
       </MapView>
     </View>
   );
@@ -1094,5 +1232,5 @@ const styles = StyleSheet.create({
   },
   greyedOut: {
     backgroundColor: "#d3d3d3",
-  }
+  },
 });
