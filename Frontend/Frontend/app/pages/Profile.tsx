@@ -1,17 +1,18 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import CarSelect from './CarSelect';
 import UserWorkTimesPage from './UserWorkTime';
 import Addresses from './Addresses';
 import { NavBar } from '../components/NavBar';
 import { Ionicons } from '@expo/vector-icons';
 import ModeOfTransport from './ModeOfTransport';
+import UserWorkTimeAndroid from './UserWorkTimesAndroid';
 
 const sections = [
     { id: '1', title: 'Car', icon: "car", component: <CarSelect /> },
     { id: '2', title: 'Addresses', icon: "location", component: <Addresses /> },
     { id: '3', title: 'Mode of Transport', icon: "walk-outline", component: <ModeOfTransport /> },
-    { id: '4', title: 'Work Times', icon: "time", component: <UserWorkTimesPage /> },
+    { id: '4', title: 'Work Times', icon: "time", component: Platform.OS === 'ios' ? <UserWorkTimesPage /> : <UserWorkTimeAndroid /> },
 ];
 
 const Profile: React.FC = () => {
