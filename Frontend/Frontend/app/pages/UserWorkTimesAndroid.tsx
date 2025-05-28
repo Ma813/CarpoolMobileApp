@@ -343,8 +343,9 @@ const WorkTimeStyles = StyleSheet.create({
     timeButton: {
         paddingHorizontal: 8,
         paddingVertical: 4,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: "lightgray",
         borderRadius: 4,
+        marginRight: 10,
     },
     timeText: {
         fontFamily: "Gotham-Bold",
