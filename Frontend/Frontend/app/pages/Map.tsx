@@ -62,11 +62,11 @@ const Map = () => {
     key: string;
     icon: "car-outline" | "walk-outline" | "bicycle-outline" | "bus-outline";
   }[] = [
-    { key: "car", icon: "car-outline" },
-    { key: "walk", icon: "walk-outline" },
-    { key: "bicycle", icon: "bicycle-outline" },
-    { key: "bus", icon: "bus-outline" },
-  ];
+      { key: "car", icon: "car-outline" },
+      { key: "walk", icon: "walk-outline" },
+      { key: "bicycle", icon: "bicycle-outline" },
+      { key: "bus", icon: "bus-outline" },
+    ];
 
   const [pickupPoints, setPickupPoints] = useState<
     {
@@ -206,12 +206,10 @@ const Map = () => {
 
     var skip = selectedPickup === 0 ? 0 : 1;
 
-    const origin = `${allPoints[selectedPickup + skip].longitude},${
-      allPoints[selectedPickup + skip].latitude
-    }`;
-    const dest = `${allPoints[selectedPickup + 2].longitude},${
-      allPoints[selectedPickup + 2].latitude
-    }`;
+    const origin = `${allPoints[selectedPickup + skip].longitude},${allPoints[selectedPickup + skip].latitude
+      }`;
+    const dest = `${allPoints[selectedPickup + 2].longitude},${allPoints[selectedPickup + 2].latitude
+      }`;
     const coordinatesStr = `${origin};${dest}`;
 
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatesStr}?geometries=geojson&access_token=${accessToken}&overview=full`;
@@ -262,8 +260,8 @@ const Map = () => {
     const waypointsStr =
       waypoints.length > 0
         ? `&waypoints=${waypoints
-            .map((wp) => `${wp.latitude},${wp.longitude}`)
-            .join("|")}`
+          .map((wp) => `${wp.latitude},${wp.longitude}`)
+          .join("|")}`
         : "";
 
     return `${base}&${originStr}&${destinationStr}${waypointsStr}`;
@@ -432,7 +430,7 @@ const Map = () => {
                   }
                   busLineIndexes.push(
                     busLineIndexes[busLineIndexes.length - 1] +
-                      decodedPolyline.length
+                    decodedPolyline.length
                   );
                   setBusLineIndexes(busLineIndexes);
                   console.log("Bus line indexes:", busLineIndexes);
@@ -649,11 +647,11 @@ const Map = () => {
   // Insert logic for defaultRegion before return
   const defaultRegion = currentLocation
     ? {
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    }
     : undefined;
 
   return (
@@ -761,9 +759,9 @@ const Map = () => {
               Alert.alert(
                 "CO2 Emissions Info",
                 `This value represents the estimated CO2 emissions for the trip based on the selected route.\n\n` +
-                  (carDefault
-                    ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
-                    : "The calculation is based on your car.")
+                (carDefault
+                  ? "The calculation is based on an average petrol car (burning 8 liters / 100 km)."
+                  : "The calculation is based on your car.")
               )
             }
             style={{
@@ -784,15 +782,15 @@ const Map = () => {
         <GoogleMapsButton
           origin={currentLocation}
           destination={destination}
-          label="Open Route in Google Maps"
+          label="Open in"
           travelMode={
             selectedMode === "walk"
               ? "walking"
               : selectedMode === "bicycle"
-              ? "bicycling"
-              : selectedMode === "bus"
-              ? "transit"
-              : "driving"
+                ? "bicycling"
+                : selectedMode === "bus"
+                  ? "transit"
+                  : "driving"
           }
         />
       )}
@@ -935,12 +933,12 @@ const Map = () => {
                       pickupPoints[selectedPickup + 1].usernames == "Work"
                         ? "briefcase"
                         : pickupPoints[selectedPickup + 1].usernames == "Home"
-                        ? "home"
-                        : pickupPoints[selectedPickup + 1].usernames.includes(
+                          ? "home"
+                          : pickupPoints[selectedPickup + 1].usernames.includes(
                             ","
                           )
-                        ? "people"
-                        : "person"
+                            ? "people"
+                            : "person"
                     }
                     size={16}
                     color="black"
@@ -995,7 +993,7 @@ const Map = () => {
                     style={[
                       styles.infoButton,
                       selectedPickup === pickupPoints.length - 2 &&
-                        styles.greyedOut,
+                      styles.greyedOut,
                     ]}
                     onPress={() => {
                       setSelectedPickup((prevIndex) => {
@@ -1049,7 +1047,7 @@ const Map = () => {
             destination={pickupPoints[pickupPoints.length - 1]}
             waypoints={pickupPoints.slice(1, pickupPoints.length - 1)}
             travelMode="driving"
-            label="Open Full Route in Google Maps"
+            label="Open Full Route in"
           />
         </>
       )}

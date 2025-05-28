@@ -1,3 +1,10 @@
+let googleMapsIcon;
+try {
+  googleMapsIcon = require("../../assets/images/google_maps.png");
+} catch (e) {
+  googleMapsIcon = null;
+}
+
 import React from "react";
 import {
   TouchableOpacity,
@@ -5,6 +12,8 @@ import {
   Alert,
   Linking,
   StyleSheet,
+  Image,
+  View,
 } from "react-native";
 
 interface Coordinate {
@@ -50,7 +59,18 @@ const GoogleMapsButton: React.FC<GoogleMapsButtonProps> = ({
 
   return (
     <TouchableOpacity style={styles.button} onPress={handlePress}>
-      <Text style={styles.text}>{label}</Text>
+      <View style={styles.content}>
+        <Text style={styles.text}>{label}</Text>
+        {googleMapsIcon ? (
+          <Image
+            source={googleMapsIcon}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        ) : (
+          <Text style={styles.text}>Google Maps</Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -60,13 +80,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#9fbf2a",
     padding: 12,
     borderRadius: 6,
-    marginTop: 10,
+    marginVertical: 10,
     alignSelf: "center",
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   text: {
     color: "white",
     textAlign: "center",
     fontWeight: "bold",
+  },
+  image: {
+    width: 24,
+    height: 24,
   },
 });
 
