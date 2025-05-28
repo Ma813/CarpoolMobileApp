@@ -283,10 +283,24 @@ namespace Backend.Controllers
 
             if (!coordinatesList.Any()) return BadRequest("Failed to retrieve coordinates for colleagues");
 
+            // add work address to the coordinates list
+            var workAddress = await _context.UserAddresses
+                .Where(a => a.user_id == int.Parse(userId))
+                .Select(a => new { a.work_lat, a.work_lon, a.work_address })
+                .FirstOrDefaultAsync();
+            if (workAddress != null)
+            {
+                coordinatesList.Add($"{workAddress.work_lon},{workAddress.work_lat}");
+            }
+            else
+            {
+                return BadRequest("User work address not found");
+            }
+
             // 4. Sudaryti Mapbox Optimization API užklausą
             string coordinates = $"{userLongitude},{userLatitude};" + string.Join(";", coordinatesList);
             string accessToken = _configuration["Mapbox:AccessToken"];
-            string optimizeUrl = $"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coordinates}?access_token={accessToken}&geometries=geojson";
+            string optimizeUrl = $"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coordinates}?access_token={accessToken}&geometries=geojson&destination=last";
 
             var httpClient = new HttpClient();
             var response = await httpClient.GetStringAsync(optimizeUrl);
@@ -296,7 +310,7 @@ namespace Backend.Controllers
             if (waypoints.GetArrayLength() == 0) return BadRequest("Could not optimize route");
 
 
-            var optimizedRoute = waypoints.EnumerateArray().Skip(1) // Skip the first waypoint (user's home)
+            var optimizedRoute = waypoints.EnumerateArray().Skip(1).Take(waypoints.GetArrayLength() - 2) // Skip the first and last waypoint
                 .Select(wp => new
                 {
                     Order = wp.GetProperty("waypoint_index").GetInt32(),
@@ -363,10 +377,10 @@ namespace Backend.Controllers
             System.Console.WriteLine("Optimized route: " + JsonSerializer.Serialize(optimizedRoute));
 
             //add waypoint to work
-            var workAddress = await _context.UserAddresses
-                .Where(a => a.user_id == int.Parse(userId))
-                .Select(a => new { a.work_lat, a.work_lon, a.work_address })
-                .FirstOrDefaultAsync();
+            // var workAddress = await _context.UserAddresses
+            //     .Where(a => a.user_id == int.Parse(userId))
+            //     .Select(a => new { a.work_lat, a.work_lon, a.work_address })
+            //     .FirstOrDefaultAsync();
             if (workAddress != null)
             {
                 routesWithNames.Add(new

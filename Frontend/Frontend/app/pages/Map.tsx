@@ -1043,7 +1043,7 @@ const Map = () => {
             )}
           </View>
           <GoogleMapsButton
-            origin={pickupPoints[0]}
+            origin={currentLocation ?? pickupPoints[0]}
             destination={pickupPoints[pickupPoints.length - 1]}
             waypoints={pickupPoints.slice(1, pickupPoints.length - 1)}
             travelMode="driving"
